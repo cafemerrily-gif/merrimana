@@ -155,8 +155,9 @@ export default function MediaClient({
           </div>
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            disabled={uploading || !bucketUrl}
+            title={!bucketUrl ? 'Supabase Storage の "marketing" バケットを作成してください' : undefined}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Upload size={15} />
             {uploading ? "アップロード中..." : "アップロード"}
@@ -210,8 +211,9 @@ export default function MediaClient({
                 対応形式: 画像（JPEG/PNG/WebP）・動画（MP4/MOV）・PDF
               </p>
               {!bucketUrl && (
-                <p className="text-xs text-orange-500 mt-2">
-                  ⚠ Supabase Storage の "marketing" バケットを作成してください（公開バケット）
+                <p className="text-xs text-red-500 font-medium mt-2">
+                  ⚠ Supabase Storage に "marketing" バケットが見つかりません。
+                  ダッシュボードの Storage から公開バケット「marketing」を作成してください。
                 </p>
               )}
             </div>
