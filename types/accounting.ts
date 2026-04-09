@@ -1,3 +1,13 @@
+export interface SaleItem {
+  id: string;
+  sale_id: string;
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  subtotal: number;
+}
+
 export interface Sale {
   id: string;
   date: string;
@@ -5,6 +15,16 @@ export interface Sale {
   customer_count: number;
   notes: string;
   created_at: string;
+  sale_items: SaleItem[];
+}
+
+export interface ProductForSale {
+  id: string;
+  name: string;
+  price: number;
+  status: string;
+  sale_start: string | null;
+  sale_end: string | null;
 }
 
 export interface Expense {

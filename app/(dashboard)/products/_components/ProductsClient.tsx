@@ -4,11 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Modal, inputCls, FieldLabel } from "@/components/ui/modal";
-import {
-  createProduct,
-  updateProduct,
-  deleteProduct,
-} from "@/app/actions/products";
+import { createProduct, updateProduct, deleteProduct } from "@/app/actions/products";
 import type { Product, Category, ProductStatus } from "@/types/products";
 import { cn } from "@/utils/cn";
 
@@ -25,9 +21,25 @@ type FormState = {
   category_id: string;
   price: string;
   status: ProductStatus;
+  sale_start: string;
+  sale_end: string;
 };
 
-const emptyForm: FormState = { name: "", category_id: "", price: "", status: "販売中" };
+const emptyForm: FormState = {
+  name: "",
+  category_id: "",
+  price: "",
+  status: "販売中",
+  sale_start: "",
+  sale_end: "",
+};
+
+function formatPeriod(start: string | null, end: string | null): string {
+  if (!start && !end) return "無期限";
+  if (start && end) return `${start} 〜 ${end}`;
+  if (start) return `${start} 〜`;
+  return `〜 ${end}`;
+}
 
 export default function ProductsClient({
   initialProducts,
@@ -59,6 +71,8 @@ export default function ProductsClient({
       category_id: p.category_id ?? "",
       price: String(p.price),
       status: p.status,
+      sale_start: p.sale_start ?? "",
+      sale_end: p.sale_end ?? "",
     });
     setError(null);
     setModal({ mode: "edit", product: p });
@@ -69,12 +83,17 @@ export default function ProductsClient({
     if (!form.name.trim()) return setError("商品名は必須です");
     const price = parseInt(form.price);
     if (!form.price || isNaN(price) || price < 0) return setError("有効な価格を入力してください");
+    if (form.sale_start && form.sale_end && form.sale_start > form.sale_end) {
+      return setError("終了日は開始日以降を指定してください");
+    }
 
     const data = {
       name: form.name.trim(),
       category_id: form.category_id || null,
       price,
       status: form.status,
+      sale_start: form.sale_start || null,
+      sale_end: form.sale_end || null,
     };
 
     startTransition(async () => {
@@ -171,7 +190,8 @@ export default function ProductsClient({
                   <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">商品名</th>
                   <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400 hidden sm:table-cell">カテゴリ</th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">価格</th>
-                  <th className="text-center px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">ステータス</th>
+                  <th className="text-left px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400 hidden lg:table-cell">販売期間</th>
+                  <th className="text-center px-4 py-3 font-medium text-neutral-500 dark:text-neutral-400">状態</th>
                   <th className="px-4 py-3 w-20" />
                 </tr>
               </thead>
@@ -185,6 +205,9 @@ export default function ProductsClient({
                     <td className="px-4 py-3 text-neutral-500 hidden sm:table-cell">{p.category?.name ?? "—"}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
                       ¥{p.price.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-neutral-400 hidden lg:table-cell">
+                      {formatPeriod(p.sale_start, p.sale_end)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={cn("inline-block px-2 py-0.5 rounded-full text-xs font-medium", statusStyle[p.status])}>
@@ -213,7 +236,9 @@ export default function ProductsClient({
             </table>
           )}
         </div>
-        <p className="text-xs text-neutral-400">{filtered.length}件 / 合計 {initialProducts.length}件</p>
+        <p className="text-xs text-neutral-400">
+          {filtered.length}件 / 合計 {initialProducts.length}件
+        </p>
       </div>
 
       {/* 追加・編集モーダル */}
@@ -268,10 +293,41 @@ export default function ProductsClient({
               className={inputCls()}
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
           </FieldLabel>
+
+          {/* 販売期間 */}
+          <div>
+            <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+              販売期間（空欄＝無期限）
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <FieldLabel label="開始日">
+                <input
+                  type="date"
+                  value={form.sale_start}
+                  onChange={(e) => setForm({ ...form, sale_start: e.target.value })}
+                  className={inputCls()}
+                />
+              </FieldLabel>
+              <FieldLabel label="終了日">
+                <input
+                  type="date"
+                  value={form.sale_end}
+                  onChange={(e) => setForm({ ...form, sale_end: e.target.value })}
+                  className={inputCls()}
+                />
+              </FieldLabel>
+            </div>
+            <p className="text-xs text-neutral-400 mt-1">
+              開始日・終了日ともに空欄の場合、無期限で売上入力の対象になります。
+            </p>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={() => setModal(null)}

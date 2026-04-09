@@ -15,6 +15,8 @@ export interface Product {
   category?: Category;
   price: number;
   status: ProductStatus;
+  sale_start: string | null;
+  sale_end: string | null;
   created_at: string;
   updated_at: string;
 }

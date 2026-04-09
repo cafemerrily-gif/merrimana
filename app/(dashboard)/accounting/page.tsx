@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import SalesClient from "./_components/SalesClient";
-import type { Sale, MonthlySale } from "@/types/accounting";
+import type { Sale, MonthlySale, ProductForSale } from "@/types/accounting";
 
 function getMonthRange(year: number, month: number) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -29,6 +29,7 @@ function buildMonthlySummary(
 export default async function AccountingPage() {
   let sales: Sale[] = [];
   let monthlySummary: MonthlySale[] = [];
+  let products: ProductForSale[] = [];
   let dbError = false;
 
   try {
@@ -37,7 +38,6 @@ export default async function AccountingPage() {
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
-    // 直近6ヶ月のリスト
     const sixMonths = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(year, month - 1 - (5 - i), 1);
       return {
@@ -51,7 +51,7 @@ export default async function AccountingPage() {
     const { start: chartStart } = getMonthRange(oldest.year, oldest.month);
     const { start: curStart, end: curEnd } = getMonthRange(year, month);
 
-    const [{ data: allSales }, { data: curSales }] = await Promise.all([
+    const [{ data: allSales }, { data: curSales }, { data: productData }] = await Promise.all([
       supabase
         .from("sales")
         .select("date, amount, customer_count")
@@ -59,17 +59,30 @@ export default async function AccountingPage() {
         .order("date", { ascending: false }),
       supabase
         .from("sales")
-        .select("*")
+        .select("*, sale_items(*)")
         .gte("date", curStart)
         .lte("date", curEnd)
         .order("date", { ascending: false }),
+      supabase
+        .from("products")
+        .select("id, name, price, status, sale_start, sale_end")
+        .neq("status", "終了")
+        .order("name"),
     ]);
 
     monthlySummary = buildMonthlySummary(allSales ?? [], sixMonths);
     sales = (curSales ?? []) as Sale[];
+    products = (productData ?? []) as ProductForSale[];
   } catch {
     dbError = true;
   }
 
-  return <SalesClient sales={sales} monthlySummary={monthlySummary} dbError={dbError} />;
+  return (
+    <SalesClient
+      sales={sales}
+      monthlySummary={monthlySummary}
+      products={products}
+      dbError={dbError}
+    />
+  );
 }

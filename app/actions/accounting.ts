@@ -13,25 +13,75 @@ function revalidateAll() {
 // Sales
 // ----------------------------------------------------------------
 
+type SaleItemInput = {
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  subtotal: number;
+};
+
 export async function createSale(data: {
   date: string;
   amount: number;
   customer_count: number;
   notes: string;
+  items: SaleItemInput[];
 }) {
   const supabase = await createClient();
-  const { error } = await supabase.from("sales").insert(data);
+  const { data: sale, error } = await supabase
+    .from("sales")
+    .insert({
+      date: data.date,
+      amount: data.amount,
+      customer_count: data.customer_count,
+      notes: data.notes,
+    })
+    .select()
+    .single();
   if (error) throw new Error(error.message);
+
+  if (data.items.length > 0) {
+    const { error: itemError } = await supabase
+      .from("sale_items")
+      .insert(data.items.map((i) => ({ ...i, sale_id: sale.id })));
+    if (itemError) throw new Error(itemError.message);
+  }
+
   revalidateAll();
 }
 
 export async function updateSale(
   id: string,
-  data: { date: string; amount: number; customer_count: number; notes: string }
+  data: {
+    date: string;
+    amount: number;
+    customer_count: number;
+    notes: string;
+    items: SaleItemInput[];
+  }
 ) {
   const supabase = await createClient();
-  const { error } = await supabase.from("sales").update(data).eq("id", id);
+  const { error } = await supabase
+    .from("sales")
+    .update({
+      date: data.date,
+      amount: data.amount,
+      customer_count: data.customer_count,
+      notes: data.notes,
+    })
+    .eq("id", id);
   if (error) throw new Error(error.message);
+
+  // 明細を全件洗い替え
+  await supabase.from("sale_items").delete().eq("sale_id", id);
+  if (data.items.length > 0) {
+    const { error: itemError } = await supabase
+      .from("sale_items")
+      .insert(data.items.map((i) => ({ ...i, sale_id: id })));
+    if (itemError) throw new Error(itemError.message);
+  }
+
   revalidateAll();
 }
 

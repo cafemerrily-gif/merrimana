@@ -12,23 +12,34 @@ export async function createProduct(data: {
   category_id: string | null;
   price: number;
   status: string;
+  sale_start: string | null;
+  sale_end: string | null;
 }) {
   const supabase = await createClient();
   const { error } = await supabase.from("products").insert(data);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
   revalidatePath("/products/cost");
+  revalidatePath("/accounting");
 }
 
 export async function updateProduct(
   id: string,
-  data: { name: string; category_id: string | null; price: number; status: string }
+  data: {
+    name: string;
+    category_id: string | null;
+    price: number;
+    status: string;
+    sale_start: string | null;
+    sale_end: string | null;
+  }
 ) {
   const supabase = await createClient();
   const { error } = await supabase.from("products").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
   revalidatePath("/products/cost");
+  revalidatePath("/accounting");
 }
 
 export async function deleteProduct(id: string) {
