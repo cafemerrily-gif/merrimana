@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 // ----------------------------------------------------------------
@@ -15,7 +15,7 @@ export async function createProduct(data: {
   sale_start: string | null;
   sale_end: string | null;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("products").insert(data);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
@@ -34,7 +34,7 @@ export async function updateProduct(
     sale_end: string | null;
   }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("products").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
@@ -43,7 +43,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
@@ -60,7 +60,7 @@ export async function createCategory(data: {
   description: string;
   color: string;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("categories").insert(data);
   if (error) throw new Error(error.message);
   revalidatePath("/products/categories");
@@ -71,7 +71,7 @@ export async function updateCategory(
   id: string,
   data: { name: string; description: string; color: string }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("categories").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products/categories");
@@ -79,7 +79,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products/categories");
@@ -98,7 +98,7 @@ export async function createRecipe(data: {
   time_minutes: number;
   ingredients: IngredientInput[];
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: recipe, error } = await supabase
     .from("recipes")
     .insert({
@@ -130,7 +130,7 @@ export async function updateRecipe(
     ingredients: IngredientInput[];
   }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase
     .from("recipes")
@@ -152,7 +152,7 @@ export async function updateRecipe(
 }
 
 export async function deleteRecipe(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("recipes").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products/recipes");

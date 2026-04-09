@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 const REVALIDATE_PATHS = ["/accounting", "/accounting/expenses", "/accounting/pl", "/accounting/budget"];
@@ -28,7 +28,7 @@ export async function createSale(data: {
   notes: string;
   items: SaleItemInput[];
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: sale, error } = await supabase
     .from("sales")
     .insert({
@@ -61,7 +61,7 @@ export async function updateSale(
     items: SaleItemInput[];
   }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from("sales")
     .update({
@@ -86,7 +86,7 @@ export async function updateSale(
 }
 
 export async function deleteSale(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("sales").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
@@ -103,7 +103,7 @@ export async function createExpense(data: {
   vendor: string;
   amount: number;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("expenses").insert(data);
   if (error) throw new Error(error.message);
   revalidateAll();
@@ -113,14 +113,14 @@ export async function updateExpense(
   id: string,
   data: { date: string; category: string; description: string; vendor: string; amount: number }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("expenses").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
 }
 
 export async function deleteExpense(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("expenses").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
@@ -136,7 +136,7 @@ export async function upsertBudget(data: {
   category: string;
   amount: number;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from("budgets")
     .upsert(data, { onConflict: "year,month,category" });

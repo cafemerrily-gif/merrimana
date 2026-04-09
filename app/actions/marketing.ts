@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 function revalidateMarketing() {
@@ -21,7 +21,7 @@ export async function createCampaign(data: {
   status: string;
   tags: string[];
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("campaigns").insert(data);
   if (error) throw new Error(error.message);
   revalidateMarketing();
@@ -38,14 +38,14 @@ export async function updateCampaign(
     tags: string[];
   }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("campaigns").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidateMarketing();
 }
 
 export async function deleteCampaign(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("campaigns").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateMarketing();
@@ -63,7 +63,7 @@ export async function createPrActivity(data: {
   status: string;
   campaign_id: string | null;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("pr_activities").insert(data);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/pr");
@@ -81,7 +81,7 @@ export async function updatePrActivity(
     campaign_id: string | null;
   }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("pr_activities").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/pr");
@@ -89,7 +89,7 @@ export async function updatePrActivity(
 }
 
 export async function deletePrActivity(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("pr_activities").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/pr");
@@ -108,7 +108,7 @@ export async function insertMediaAsset(data: {
   mime_type: string;
   tags: string[];
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("media_assets").insert(data);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/media");
@@ -118,14 +118,14 @@ export async function updateMediaAsset(
   id: string,
   data: { name: string; tags: string[]; campaign_id: string | null }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("media_assets").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/media");
 }
 
 export async function deleteMediaAsset(id: string, filePath: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   await supabase.storage.from("marketing").remove([filePath]);
   const { error } = await supabase.from("media_assets").delete().eq("id", id);
   if (error) throw new Error(error.message);
