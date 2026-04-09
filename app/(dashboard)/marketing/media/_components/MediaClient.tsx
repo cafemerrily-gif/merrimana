@@ -70,7 +70,10 @@ export default function MediaClient({
           .upload(path, file, { contentType: file.type });
 
         if (uploadErr) {
-          errors.push(`${file.name}: ${uploadErr.message}`);
+          const msg = uploadErr.message.toLowerCase().includes("bucket")
+            ? `${file.name}: Storageバケット "marketing" が見つかりません。Supabaseダッシュボードで公開バケットを作成してください。`
+            : `${file.name}: ${uploadErr.message}`;
+          errors.push(msg);
           continue;
         }
 

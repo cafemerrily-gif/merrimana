@@ -15,11 +15,10 @@ export default async function MediaPage() {
       .order("created_at", { ascending: false });
     assets = (data ?? []) as MediaAsset[];
 
-    // バケット存在確認 → 存在する場合のみ公開URLベースを設定
-    const { error: bucketErr } = await supabase.storage.getBucket("marketing");
-    if (!bucketErr) {
-      const { data: urlData } = supabase.storage.from("marketing").getPublicUrl("_");
-      bucketUrl = urlData.publicUrl.replace("/_", "");
+    // Supabase Storage 公開URLベースを環境変数から直接構築
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabaseUrl) {
+      bucketUrl = `${supabaseUrl}/storage/v1/object/public/marketing`;
     }
   } catch {
     dbError = true;
