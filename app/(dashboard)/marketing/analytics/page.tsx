@@ -15,7 +15,6 @@ export default async function AnalyticsPage() {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  // 直近6ヶ月
   const sixMonths = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(year, month - 1 - (5 - i), 1);
     return getMonthRange(d.getFullYear(), d.getMonth() + 1);
@@ -23,79 +22,85 @@ export default async function AnalyticsPage() {
   const oldest = sixMonths[0];
 
   let dbError = false;
-  let monthlyData: {
-    label: string;
-    sales: number;
-    adCost: number;
-    roi: number | null;
-  }[] = [];
-  let channelSummary: { channel: string; cost: number; count: number }[] = [];
+  let monthlyData: { label: string; customers: number; prCount: number }[] = [];
+  let channelSummary: { channel: string; count: number; completed: number }[] = [];
   let activeCampaigns: { title: string; start_date: string | null; end_date: string | null }[] = [];
-  let totalAdCost = 0;
-  let totalSales = 0;
+  let upcomingPr: { title: string; channel: string; scheduled_at: string }[] = [];
+  let totalCustomers = 0;
+  let totalPrActivities = 0;
+  let completedPrActivities = 0;
 
   try {
     const supabase = await createClient();
 
-    const [{ data: salesData }, { data: adsData }, { data: campaignsData }] = await Promise.all([
+    const [{ data: salesData }, { data: prData }, { data: campaignsData }] = await Promise.all([
       supabase
         .from("sales")
-        .select("date, amount")
+        .select("date, customer_count")
         .gte("date", oldest.start),
       supabase
-        .from("ads")
-        .select("channel, cost, start_date, status"),
+        .from("pr_activities")
+        .select("channel, status, scheduled_at, title"),
       supabase
         .from("campaigns")
         .select("title, start_date, end_date, status")
         .eq("status", "実施中"),
     ]);
 
-    // 月別売上集計
-    const salesByMonth = new Map<string, number>();
+    // 月別来客数
+    const customersByMonth = new Map<string, number>();
     (salesData ?? []).forEach((s) => {
       const key = s.date.slice(0, 7);
-      salesByMonth.set(key, (salesByMonth.get(key) ?? 0) + s.amount);
+      customersByMonth.set(key, (customersByMonth.get(key) ?? 0) + (s.customer_count ?? 0));
     });
+    totalCustomers = Array.from(customersByMonth.values()).reduce((s, v) => s + v, 0);
 
-    // 広告費：start_dateの月で集計（start_dateなしは今月扱い）
-    const adCostByMonth = new Map<string, number>();
-    (adsData ?? []).forEach((a) => {
-      const key = a.start_date ? a.start_date.slice(0, 7) : `${year}-${String(month).padStart(2, "0")}`;
-      if (sixMonths.some((m) => m.key === key)) {
-        adCostByMonth.set(key, (adCostByMonth.get(key) ?? 0) + a.cost);
+    // PR活動の月別カウント（scheduled_at がある活動のみ）
+    const prByMonth = new Map<string, number>();
+    (prData ?? []).forEach((p) => {
+      if (p.scheduled_at) {
+        const key = p.scheduled_at.slice(0, 7);
+        if (sixMonths.some((m) => m.key === key)) {
+          prByMonth.set(key, (prByMonth.get(key) ?? 0) + 1);
+        }
       }
     });
 
-    monthlyData = sixMonths.map((m) => {
-      const sales = salesByMonth.get(m.key) ?? 0;
-      const adCost = adCostByMonth.get(m.key) ?? 0;
-      const roi = adCost > 0 ? Math.round(((sales - adCost) / adCost) * 100) : null;
-      return { label: m.label, sales, adCost, roi };
-    });
+    monthlyData = sixMonths.map((m) => ({
+      label: m.label,
+      customers: customersByMonth.get(m.key) ?? 0,
+      prCount: prByMonth.get(m.key) ?? 0,
+    }));
 
-    // チャネル別集計（全期間）
-    const channelMap = new Map<string, { cost: number; count: number }>();
-    (adsData ?? []).forEach((a) => {
-      const prev = channelMap.get(a.channel) ?? { cost: 0, count: 0 };
-      channelMap.set(a.channel, { cost: prev.cost + a.cost, count: prev.count + 1 });
+    // チャネル別集計
+    const channelMap = new Map<string, { count: number; completed: number }>();
+    (prData ?? []).forEach((p) => {
+      const prev = channelMap.get(p.channel) ?? { count: 0, completed: 0 };
+      channelMap.set(p.channel, {
+        count: prev.count + 1,
+        completed: prev.completed + (p.status === "完了" ? 1 : 0),
+      });
     });
     channelSummary = Array.from(channelMap.entries())
       .map(([channel, v]) => ({ channel, ...v }))
-      .sort((a, b) => b.cost - a.cost);
+      .sort((a, b) => b.count - a.count);
 
-    totalAdCost = (adsData ?? []).reduce((s, a) => s + a.cost, 0);
-    totalSales = Array.from(salesByMonth.values()).reduce((s, v) => s + v, 0);
+    totalPrActivities = (prData ?? []).length;
+    completedPrActivities = (prData ?? []).filter((p) => p.status === "完了").length;
     activeCampaigns = campaignsData ?? [];
+
+    // 今後の予定PR活動（予定のもの）
+    const todayStr = now.toISOString().slice(0, 10);
+    upcomingPr = (prData ?? [])
+      .filter((p) => p.status === "予定" && p.scheduled_at && p.scheduled_at >= todayStr)
+      .sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""))
+      .slice(0, 5)
+      .map((p) => ({ title: p.title, channel: p.channel, scheduled_at: p.scheduled_at! }));
   } catch {
     dbError = true;
   }
 
-  const overallRoi = totalAdCost > 0
-    ? Math.round(((totalSales - totalAdCost) / totalAdCost) * 100)
-    : null;
-
-  const maxBar = Math.max(...monthlyData.map((d) => Math.max(d.sales, d.adCost)), 1);
+  const maxBar = Math.max(...monthlyData.map((d) => d.customers), 1);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -113,104 +118,87 @@ export default async function AnalyticsPage() {
           {/* KPI */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: "直近6ヶ月 累計売上", value: `¥${totalSales.toLocaleString()}` },
-              { label: "直近6ヶ月 広告費", value: `¥${totalAdCost.toLocaleString()}` },
-              {
-                label: "広告ROI",
-                value: overallRoi !== null ? `${overallRoi > 0 ? "+" : ""}${overallRoi}%` : "—",
-                highlight: overallRoi !== null ? (overallRoi >= 0 ? "blue" : "red") : null,
-              },
+              { label: "直近6ヶ月 累計来客", value: `${totalCustomers.toLocaleString()}人` },
+              { label: "PR活動 合計", value: `${totalPrActivities}件` },
+              { label: "PR活動 完了", value: `${completedPrActivities}件` },
               { label: "実施中キャンペーン", value: `${activeCampaigns.length}件` },
-            ].map(({ label, value, highlight }) => (
+            ].map(({ label, value }) => (
               <div
                 key={label}
                 className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
               >
                 <p className="text-xs text-neutral-400 mb-1">{label}</p>
-                <p
-                  className={`text-xl font-bold tabular-nums ${
-                    highlight === "blue"
-                      ? "text-blue-600 dark:text-blue-400"
-                      : highlight === "red"
-                      ? "text-red-500"
-                      : "text-neutral-900 dark:text-neutral-100"
-                  }`}
-                >
+                <p className="text-xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
                   {value}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* 月別 売上 vs 広告費 グラフ */}
+          {/* 月別来客数グラフ */}
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
             <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
-              月別 売上 vs 広告費（直近6ヶ月）
+              月別来客数（直近6ヶ月）
             </h2>
-            {monthlyData.every((d) => d.sales === 0 && d.adCost === 0) ? (
+            {monthlyData.every((d) => d.customers === 0) ? (
               <p className="text-sm text-neutral-400 text-center py-8">
-                売上・広告データを登録するとグラフが表示されます。
+                売上管理で来客数を入力するとグラフが表示されます。
               </p>
             ) : (
               <>
                 <div className="flex items-end gap-4 h-40">
-                  {monthlyData.map(({ label, sales, adCost, roi }) => (
+                  {monthlyData.map(({ label, customers, prCount }) => (
                     <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="w-full flex items-end justify-center gap-0.5" style={{ height: "100px" }}>
+                      <div className="w-full flex flex-col items-center justify-end" style={{ height: "100px" }}>
                         <div
-                          className="flex-1 rounded-t bg-blue-500 dark:bg-blue-600 transition-all"
-                          style={{ height: `${Math.max((sales / maxBar) * 100, sales > 0 ? 2 : 0)}%` }}
-                          title={`売上 ¥${sales.toLocaleString()}`}
-                        />
-                        <div
-                          className="flex-1 rounded-t bg-orange-400 dark:bg-orange-500 transition-all"
-                          style={{ height: `${Math.max((adCost / maxBar) * 100, adCost > 0 ? 2 : 0)}%` }}
-                          title={`広告費 ¥${adCost.toLocaleString()}`}
+                          className="w-full rounded-t bg-blue-500 dark:bg-blue-600 transition-all"
+                          style={{ height: `${Math.max((customers / maxBar) * 100, customers > 0 ? 2 : 0)}%` }}
+                          title={`来客数 ${customers}人`}
                         />
                       </div>
                       <span className="text-xs text-neutral-400">{label}</span>
-                      {roi !== null && (
-                        <span className={`text-xs font-medium ${roi >= 0 ? "text-blue-500" : "text-red-400"}`}>
-                          {roi >= 0 ? "+" : ""}{roi}%
-                        </span>
+                      {prCount > 0 && (
+                        <span className="text-xs text-green-500 font-medium">PR {prCount}件</span>
                       )}
                     </div>
                   ))}
                 </div>
                 <div className="flex items-center gap-4 mt-3 text-xs text-neutral-400">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-2.5 rounded bg-blue-500 inline-block" />売上
+                    <span className="w-3 h-2.5 rounded bg-blue-500 inline-block" />来客数
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-2.5 rounded bg-orange-400 inline-block" />広告費
+                    <span className="text-green-500 font-medium">PR N件</span>
+                    <span>= その月に実施予定のPR活動数</span>
                   </span>
-                  <span className="text-neutral-300 dark:text-neutral-600">※ ROIは（売上-広告費）÷広告費×100</span>
                 </div>
               </>
             )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* チャネル別広告費 */}
+            {/* チャネル別PR活動 */}
             <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
-                チャネル別広告費（累計）
+                チャネル別PR活動数
               </h2>
               {channelSummary.length === 0 ? (
-                <p className="text-sm text-neutral-400 text-center py-6">広告を登録するとここに表示されます。</p>
+                <p className="text-sm text-neutral-400 text-center py-6">
+                  PR活動を登録するとここに表示されます。
+                </p>
               ) : (
                 <div className="space-y-3">
-                  {channelSummary.map(({ channel, cost, count }) => {
-                    const pct = totalAdCost > 0 ? (cost / totalAdCost) * 100 : 0;
+                  {channelSummary.map(({ channel, count, completed }) => {
+                    const pct = totalPrActivities > 0 ? (count / totalPrActivities) * 100 : 0;
+                    const completionRate = count > 0 ? Math.round((completed / count) * 100) : 0;
                     return (
                       <div key={channel}>
                         <div className="flex items-center justify-between text-sm mb-1">
                           <span className="text-neutral-700 dark:text-neutral-300">
                             {channel}
-                            <span className="text-xs text-neutral-400 ml-1.5">{count}件</span>
                           </span>
                           <span className="text-neutral-500 tabular-nums text-xs">
-                            ¥{cost.toLocaleString()} ({pct.toFixed(0)}%)
+                            {count}件 · 完了率 {completionRate}%
                           </span>
                         </div>
                         <div className="h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
@@ -223,39 +211,63 @@ export default async function AnalyticsPage() {
               )}
             </div>
 
-            {/* 実施中キャンペーン */}
+            {/* 今後の予定 */}
             <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
-                実施中キャンペーン
+                今後のPR予定
               </h2>
-              {activeCampaigns.length === 0 ? (
+              {upcomingPr.length === 0 ? (
                 <p className="text-sm text-neutral-400 text-center py-6">
-                  実施中のキャンペーンはありません。
+                  今後予定されているPR活動はありません。
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {activeCampaigns.map((c) => (
+                  {upcomingPr.map((p, i) => (
                     <div
-                      key={c.title}
+                      key={i}
                       className="flex items-start justify-between gap-2 py-2 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
                     >
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                        {c.title}
-                      </p>
-                      {(c.start_date || c.end_date) && (
-                        <p className="text-xs text-neutral-400 shrink-0">
-                          {c.start_date ?? "—"} 〜 {c.end_date ?? "—"}
+                      <div>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
+                          {p.title}
                         </p>
-                      )}
+                        <p className="text-xs text-neutral-400 mt-0.5">{p.channel}</p>
+                      </div>
+                      <p className="text-xs text-neutral-400 shrink-0">{p.scheduled_at}</p>
                     </div>
                   ))}
                 </div>
+              )}
+
+              {activeCampaigns.length > 0 && (
+                <>
+                  <h3 className="text-xs font-semibold text-neutral-500 mt-4 mb-2 uppercase tracking-wider">
+                    実施中キャンペーン
+                  </h3>
+                  <div className="space-y-1">
+                    {activeCampaigns.map((c) => (
+                      <div
+                        key={c.title}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300 truncate">
+                          {c.title}
+                        </p>
+                        {(c.start_date || c.end_date) && (
+                          <p className="text-xs text-neutral-400 shrink-0">
+                            〜 {c.end_date ?? "—"}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
 
           <p className="text-xs text-neutral-400">
-            ※ 売上データは「売上管理」、広告費データは「広告管理」の登録内容から集計されます。
+            ※ 来客数は「売上管理」、PR活動は「PR活動」の登録内容から集計されます。
           </p>
         </>
       )}

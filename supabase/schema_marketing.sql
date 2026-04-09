@@ -1,6 +1,7 @@
 -- ============================================================
 -- Merrimana Café 広報・マーケティングスキーマ
 -- Supabase SQL Editor で実行してください
+-- ※ 既存テーブルがある場合は先に DROP して再実行してください
 -- ============================================================
 
 -- キャンペーン
@@ -16,19 +17,17 @@ CREATE TABLE IF NOT EXISTS campaigns (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 広告
-CREATE TABLE IF NOT EXISTS ads (
-  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  title       TEXT        NOT NULL,
-  channel     TEXT        NOT NULL,
-  description TEXT        NOT NULL DEFAULT '',
-  start_date  DATE,
-  end_date    DATE,
-  cost        INTEGER     NOT NULL DEFAULT 0 CHECK (cost >= 0),
-  status      TEXT        NOT NULL DEFAULT '準備中'
-              CHECK (status IN ('準備中', '実施中', '終了', '一時停止')),
-  campaign_id UUID        REFERENCES campaigns(id) ON DELETE SET NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- PR活動（無料・有機的なPR活動を記録）
+CREATE TABLE IF NOT EXISTS pr_activities (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        TEXT        NOT NULL,
+  channel      TEXT        NOT NULL,
+  description  TEXT        NOT NULL DEFAULT '',
+  scheduled_at DATE,
+  status       TEXT        NOT NULL DEFAULT '予定'
+               CHECK (status IN ('予定', '完了', '見送り')),
+  campaign_id  UUID        REFERENCES campaigns(id) ON DELETE SET NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- メディア素材（Supabase Storage のパスを保存）

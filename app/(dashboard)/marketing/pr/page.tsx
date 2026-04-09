@@ -1,0 +1,30 @@
+import { createClient } from "@/utils/supabase/server";
+import PrActivityClient from "./_components/PrActivityClient";
+import type { PrActivity } from "@/types/marketing";
+
+export default async function PrActivityPage() {
+  let activities: PrActivity[] = [];
+  let campaigns: { id: string; title: string }[] = [];
+  let dbError = false;
+
+  try {
+    const supabase = await createClient();
+    const [{ data: actData }, { data: campData }] = await Promise.all([
+      supabase
+        .from("pr_activities")
+        .select("*, campaign:campaigns(id, title)")
+        .order("scheduled_at", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("campaigns")
+        .select("id, title")
+        .in("status", ["準備中", "実施中"])
+        .order("created_at", { ascending: false }),
+    ]);
+    activities = (actData ?? []) as PrActivity[];
+    campaigns = campData ?? [];
+  } catch {
+    dbError = true;
+  }
+
+  return <PrActivityClient activities={activities} campaigns={campaigns} dbError={dbError} />;
+}

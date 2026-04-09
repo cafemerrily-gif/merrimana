@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 function revalidateMarketing() {
-  ["/marketing", "/marketing/ads", "/marketing/analytics", "/marketing/media"].forEach((p) =>
+  ["/marketing", "/marketing/pr", "/marketing/analytics", "/marketing/media"].forEach((p) =>
     revalidatePath(p)
   );
 }
@@ -52,51 +52,47 @@ export async function deleteCampaign(id: string) {
 }
 
 // ----------------------------------------------------------------
-// Ads
+// PR Activities
 // ----------------------------------------------------------------
 
-export async function createAd(data: {
+export async function createPrActivity(data: {
   title: string;
   channel: string;
   description: string;
-  start_date: string | null;
-  end_date: string | null;
-  cost: number;
+  scheduled_at: string | null;
   status: string;
   campaign_id: string | null;
 }) {
   const supabase = await createClient();
-  const { error } = await supabase.from("ads").insert(data);
+  const { error } = await supabase.from("pr_activities").insert(data);
   if (error) throw new Error(error.message);
-  revalidatePath("/marketing/ads");
+  revalidatePath("/marketing/pr");
   revalidatePath("/marketing/analytics");
 }
 
-export async function updateAd(
+export async function updatePrActivity(
   id: string,
   data: {
     title: string;
     channel: string;
     description: string;
-    start_date: string | null;
-    end_date: string | null;
-    cost: number;
+    scheduled_at: string | null;
     status: string;
     campaign_id: string | null;
   }
 ) {
   const supabase = await createClient();
-  const { error } = await supabase.from("ads").update(data).eq("id", id);
+  const { error } = await supabase.from("pr_activities").update(data).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/marketing/ads");
+  revalidatePath("/marketing/pr");
   revalidatePath("/marketing/analytics");
 }
 
-export async function deleteAd(id: string) {
+export async function deletePrActivity(id: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("ads").delete().eq("id", id);
+  const { error } = await supabase.from("pr_activities").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/marketing/ads");
+  revalidatePath("/marketing/pr");
   revalidatePath("/marketing/analytics");
 }
 
@@ -130,9 +126,7 @@ export async function updateMediaAsset(
 
 export async function deleteMediaAsset(id: string, filePath: string) {
   const supabase = await createClient();
-  // Storage から削除
   await supabase.storage.from("marketing").remove([filePath]);
-  // DB から削除
   const { error } = await supabase.from("media_assets").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/media");

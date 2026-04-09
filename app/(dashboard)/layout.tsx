@@ -62,8 +62,8 @@ const sectionSubNav: Record<
   ],
   "/marketing": [
     { href: "/marketing", icon: Campaign, label: "キャンペーン" },
-    { href: "/marketing/ads", icon: Monitor, label: "広告管理" },
-    { href: "/marketing/analytics", icon: LineChart, label: "PR効果分析" },
+    { href: "/marketing/pr", icon: Monitor, label: "PR活動" },
+    { href: "/marketing/analytics", icon: LineChart, label: "効果分析" },
     { href: "/marketing/media", icon: Image, label: "メディア素材" },
   ],
   "/system": [
@@ -306,7 +306,7 @@ function RightPanel({ section }: { section: string | null }) {
     ],
     "/marketing": [
       { label: "キャンペーンを作成", href: "/marketing" },
-      { label: "広告を登録", href: "/marketing/ads" },
+      { label: "PR活動を追加", href: "/marketing/pr" },
       { label: "素材をアップロード", href: "/marketing/media" },
     ],
     "/system": [
