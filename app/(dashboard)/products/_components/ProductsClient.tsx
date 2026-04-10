@@ -107,10 +107,12 @@ export default function ProductsClient({
   };
 
   const handleDelete = (p: Product) => {
+    setError(null);
     startTransition(async () => {
       const result = await deleteProduct(p.id) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setDeleteTarget(null);
+      setError(null);
       router.refresh();
     });
   };
@@ -341,9 +343,14 @@ export default function ProductsClient({
       {/* 削除確認モーダル */}
       <Modal
         open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => { setDeleteTarget(null); setError(null); }}
         title="商品の削除"
       >
+        {error && (
+          <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2 mb-4">
+            {error}
+          </p>
+        )}
         <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-5">
           「<span className="font-semibold">{deleteTarget?.name}</span>」を削除しますか？
           関連するレシピも削除されます。この操作は取り消せません。

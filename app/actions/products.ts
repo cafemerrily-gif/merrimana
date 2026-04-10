@@ -57,6 +57,16 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<{ error?: string }> {
   try {
     const supabase = createAdminClient();
+
+    // sale_items の参照チェック
+    const { count } = await supabase
+      .from("sale_items")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", id);
+    if (count && count > 0) {
+      return { error: "この商品には売上データが紐付いているため削除できません。ステータスを「終了」に変更してください。" };
+    }
+
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return { error: error.message };
     revalidatePath("/products");
