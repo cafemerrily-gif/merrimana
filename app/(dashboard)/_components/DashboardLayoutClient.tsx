@@ -33,7 +33,6 @@ import {
   ClipboardList,
   CalendarDays,
   PackageSearch,
-  ShoppingCart,
   Clock,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -80,7 +79,6 @@ const sectionSubNav: Record<
     { href: "/store/timecard",   icon: Clock,         label: "タイムカード" },
     { href: "/store/shift",      icon: CalendarDays,  label: "シフト表" },
     { href: "/store/inventory",  icon: PackageSearch, label: "在庫管理" },
-    { href: "/store/orders",     icon: ShoppingCart,  label: "発注管理" },
   ],
 };
 
@@ -397,7 +395,6 @@ function RightPanel({ section, permissions }: { section: string | null; permissi
     "/store": [
       { label: "日報を提出",   href: "/store" },
       { label: "在庫を更新",   href: "/store/inventory" },
-      { label: "発注を申請",   href: "/store/orders" },
     ],
   };
 
