@@ -8,10 +8,22 @@ export interface SaleItem {
   subtotal: number;
 }
 
+export const WEATHER_OPTIONS = ["晴れ", "曇り", "雨", "雪", "嵐"] as const;
+export type Weather = (typeof WEATHER_OPTIONS)[number];
+
+export const WEATHER_ICON: Record<Weather, string> = {
+  晴れ: "☀️",
+  曇り: "☁️",
+  雨: "🌧",
+  雪: "❄️",
+  嵐: "⛈",
+};
+
 export interface Sale {
   id: string;
   date: string;
   time_slot: string | null;
+  weather: Weather | null;
   amount: number;
   customer_count: number;
   notes: string;

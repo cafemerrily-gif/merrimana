@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, TrendingUp, Users, DollarSign, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { Modal, inputCls, FieldLabel } from "@/components/ui/modal";
 import { createSale, updateSale, deleteSale } from "@/app/actions/accounting";
-import type { Sale, ProductForSale } from "@/types/accounting";
+import type { Sale, ProductForSale, Weather } from "@/types/accounting";
+import { WEATHER_OPTIONS, WEATHER_ICON } from "@/types/accounting";
 import type { SettingsMap } from "../../system/master/page";
 
 type ItemQuantity = {
@@ -18,6 +19,7 @@ type ItemQuantity = {
 type FormState = {
   date: string;
   time_slot: string;
+  weather: Weather | "";
   customer_count: string;
   notes: string;
   quantities: ItemQuantity[];
@@ -86,6 +88,7 @@ export default function SalesClient({
   const [form, setForm] = useState<FormState>({
     date: todayStr(),
     time_slot: "",
+    weather: "",
     customer_count: "",
     notes: "",
     quantities: [],
@@ -99,6 +102,7 @@ export default function SalesClient({
     setForm({
       date: today,
       time_slot: slots[0] ?? "",
+      weather: "",
       customer_count: "",
       notes: "",
       quantities: buildQuantities(products, today),
@@ -111,6 +115,7 @@ export default function SalesClient({
     setForm({
       date: s.date,
       time_slot: s.time_slot ?? "",
+      weather: (s.weather as Weather) ?? "",
       customer_count: String(s.customer_count),
       notes: s.notes,
       quantities: buildQuantities(products, s.date, s.sale_items),
@@ -161,6 +166,7 @@ export default function SalesClient({
         const data = {
           date: form.date,
           time_slot: form.time_slot || null,
+          weather: form.weather || null,
           amount: total,
           customer_count: parseInt(form.customer_count) || 0,
           notes: form.notes,
@@ -351,6 +357,9 @@ export default function SalesClient({
                               {s.time_slot && (
                                 <span className="ml-1.5 text-blue-500 dark:text-blue-400">{s.time_slot}</span>
                               )}
+                              {s.weather && (
+                                <span className="ml-1.5" title={s.weather}>{WEATHER_ICON[s.weather]}</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-right font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
                               ¥{s.amount.toLocaleString()}
@@ -457,16 +466,37 @@ export default function SalesClient({
               })()}
             </FieldLabel>
           </div>
-          <FieldLabel label="来客数（名）">
-            <input
-              type="number"
-              value={form.customer_count}
-              onChange={(e) => setForm({ ...form, customer_count: e.target.value })}
-              min="0"
-              placeholder="0"
-              className={inputCls()}
-            />
-          </FieldLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <FieldLabel label="来客数（名）">
+              <input
+                type="number"
+                value={form.customer_count}
+                onChange={(e) => setForm({ ...form, customer_count: e.target.value })}
+                min="0"
+                placeholder="0"
+                className={inputCls()}
+              />
+            </FieldLabel>
+            <FieldLabel label="天気">
+              <div className="flex gap-1.5 flex-wrap pt-0.5">
+                {WEATHER_OPTIONS.map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => setForm({ ...form, weather: form.weather === w ? "" : w })}
+                    title={w}
+                    className={`px-2 py-1 rounded-lg border text-base transition-colors ${
+                      form.weather === w
+                        ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                        : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600"
+                    }`}
+                  >
+                    {WEATHER_ICON[w]}
+                  </button>
+                ))}
+              </div>
+            </FieldLabel>
+          </div>
 
           {/* 商品別数量入力 */}
           <div>
