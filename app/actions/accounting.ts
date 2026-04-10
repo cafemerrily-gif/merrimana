@@ -27,28 +27,28 @@ export async function createSale(data: {
   customer_count: number;
   notes: string;
   items: SaleItemInput[];
-}) {
-  const supabase = createAdminClient();
-  const { data: sale, error } = await supabase
-    .from("sales")
-    .insert({
-      date: data.date,
-      amount: data.amount,
-      customer_count: data.customer_count,
-      notes: data.notes,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: sale, error } = await supabase
+      .from("sales")
+      .insert({ date: data.date, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
+      .select()
+      .single();
+    if (error) return { error: error.message };
 
-  if (data.items.length > 0) {
-    const { error: itemError } = await supabase
-      .from("sale_items")
-      .insert(data.items.map((i) => ({ ...i, sale_id: sale.id })));
-    if (itemError) throw new Error(itemError.message);
+    if (data.items.length > 0) {
+      const { error: itemError } = await supabase
+        .from("sale_items")
+        .insert(data.items.map((i) => ({ ...i, sale_id: sale.id })));
+      if (itemError) return { error: itemError.message };
+    }
+
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
   }
-
-  revalidateAll();
 }
 
 export async function updateSale(
@@ -60,36 +60,40 @@ export async function updateSale(
     notes: string;
     items: SaleItemInput[];
   }
-) {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("sales")
-    .update({
-      date: data.date,
-      amount: data.amount,
-      customer_count: data.customer_count,
-      notes: data.notes,
-    })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("sales")
+      .update({ date: data.date, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
+      .eq("id", id);
+    if (error) return { error: error.message };
 
-  // 明細を全件洗い替え
-  await supabase.from("sale_items").delete().eq("sale_id", id);
-  if (data.items.length > 0) {
-    const { error: itemError } = await supabase
-      .from("sale_items")
-      .insert(data.items.map((i) => ({ ...i, sale_id: id })));
-    if (itemError) throw new Error(itemError.message);
+    await supabase.from("sale_items").delete().eq("sale_id", id);
+    if (data.items.length > 0) {
+      const { error: itemError } = await supabase
+        .from("sale_items")
+        .insert(data.items.map((i) => ({ ...i, sale_id: id })));
+      if (itemError) return { error: itemError.message };
+    }
+
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
   }
-
-  revalidateAll();
 }
 
-export async function deleteSale(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("sales").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateAll();
+export async function deleteSale(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("sales").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -102,28 +106,43 @@ export async function createExpense(data: {
   description: string;
   vendor: string;
   amount: number;
-}) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("expenses").insert(data);
-  if (error) throw new Error(error.message);
-  revalidateAll();
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("expenses").insert(data);
+    if (error) return { error: error.message };
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updateExpense(
   id: string,
   data: { date: string; category: string; description: string; vendor: string; amount: number }
-) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("expenses").update(data).eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateAll();
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("expenses").update(data).eq("id", id);
+    if (error) return { error: error.message };
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deleteExpense(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("expenses").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateAll();
+export async function deleteExpense(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidateAll();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -135,11 +154,16 @@ export async function upsertBudget(data: {
   month: number;
   category: string;
   amount: number;
-}) {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("budgets")
-    .upsert(data, { onConflict: "year,month,category" });
-  if (error) throw new Error(error.message);
-  revalidatePath("/accounting/budget");
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("budgets")
+      .upsert(data, { onConflict: "year,month,category" });
+    if (error) return { error: error.message };
+    revalidatePath("/accounting/budget");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "保存に失敗しました" };
+  }
 }

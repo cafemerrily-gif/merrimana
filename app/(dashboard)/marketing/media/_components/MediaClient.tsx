@@ -84,7 +84,7 @@ export default function MediaClient({
           file_size: file.size,
           mime_type: file.type,
           tags: [],
-        });
+        }) as { error?: string };
         if (insertResult.error) {
           errors.push(`${file.name}: メタデータ保存失敗`);
           // ストレージから削除
@@ -116,7 +116,7 @@ export default function MediaClient({
         name: editForm.name.trim() || editTarget.name,
         tags,
         campaign_id: editTarget.campaign_id,
-      });
+      }) as { error?: string };
       if (result.error) { setActionError(result.error); return; }
       setEditTarget(null);
       router.refresh();
@@ -125,7 +125,7 @@ export default function MediaClient({
 
   const handleDelete = (a: MediaAsset) => {
     startTransition(async () => {
-      const result = await deleteMediaAsset(a.id, a.file_path);
+      const result = await deleteMediaAsset(a.id, a.file_path) as { error?: string };
       if (result.error) { setActionError(result.error); return; }
       setDeleteTarget(null);
       router.refresh();

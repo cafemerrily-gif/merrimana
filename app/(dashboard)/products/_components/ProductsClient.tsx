@@ -97,29 +97,21 @@ export default function ProductsClient({
     };
 
     startTransition(async () => {
-      try {
-        if (modal?.mode === "edit") {
-          await updateProduct(modal.product.id, data);
-        } else {
-          await createProduct(data);
-        }
-        setModal(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const result = (modal?.mode === "edit"
+        ? await updateProduct(modal.product.id, data)
+        : await createProduct(data)) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setModal(null);
+      router.refresh();
     });
   };
 
   const handleDelete = (p: Product) => {
     startTransition(async () => {
-      try {
-        await deleteProduct(p.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteProduct(p.id) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 

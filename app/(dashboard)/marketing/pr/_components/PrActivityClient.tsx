@@ -98,13 +98,13 @@ export default function PrActivityClient({
     };
     startTransition(async () => {
       if (editTarget) {
-        const result = await updatePrActivity(editTarget.id, payload);
+        const result = await updatePrActivity(editTarget.id, payload) as { data?: unknown; error?: string };
         if (result.error) { setActionError(result.error); return; }
-        setActivities((prev) => prev.map((a) => (a.id === editTarget.id ? (result.data as unknown as PrActivity) : a)));
+        setActivities((prev) => prev.map((a) => (a.id === editTarget.id ? (result.data as PrActivity) : a)));
       } else {
-        const result = await createPrActivity(payload);
+        const result = await createPrActivity(payload) as { data?: unknown; error?: string };
         if (result.error) { setActionError(result.error); return; }
-        setActivities((prev) => [...prev, result.data as unknown as PrActivity]);
+        setActivities((prev) => [...prev, result.data as PrActivity]);
       }
       setIsModalOpen(false);
     });
@@ -113,7 +113,7 @@ export default function PrActivityClient({
   const handleDelete = () => {
     if (!deleteTarget) return;
     startTransition(async () => {
-      const result = await deletePrActivity(deleteTarget.id);
+      const result = await deletePrActivity(deleteTarget.id) as { error?: string };
       if (result.error) { setActionError(result.error); return; }
       setActivities((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       setDeleteTarget(null);

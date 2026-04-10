@@ -87,30 +87,22 @@ export default function RecipesClient({
       .map((i) => ({ name: i.name.trim(), amount: i.amount.trim(), cost: parseInt(i.cost) || 0 }));
 
     startTransition(async () => {
-      try {
-        const data = { product_id: form.product_id, yield_count: yc, time_minutes: tm, ingredients };
-        if (modal?.mode === "edit") {
-          await updateRecipe(modal.recipe.id, data);
-        } else {
-          await createRecipe(data);
-        }
-        setModal(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const data = { product_id: form.product_id, yield_count: yc, time_minutes: tm, ingredients };
+      const result = (modal?.mode === "edit"
+        ? await updateRecipe(modal.recipe.id, data)
+        : await createRecipe(data)) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setModal(null);
+      router.refresh();
     });
   };
 
   const handleDelete = (r: Recipe) => {
     startTransition(async () => {
-      try {
-        await deleteRecipe(r.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteRecipe(r.id) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 

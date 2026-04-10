@@ -91,10 +91,10 @@ export default function ExpensesClient({
         amount,
       };
       if (modal?.mode === "edit") {
-        const result = await updateExpense(modal.expense.id, data);
+        const result = await updateExpense(modal.expense.id, data) as { error?: string };
         if (result.error) { setError(result.error); return; }
       } else {
-        const result = await createExpense(data);
+        const result = await createExpense(data) as { error?: string };
         if (result.error) { setError(result.error); return; }
       }
       setModal(null);
@@ -104,7 +104,7 @@ export default function ExpensesClient({
 
   const handleDelete = (e: Expense) => {
     startTransition(async () => {
-      const result = await deleteExpense(e.id);
+      const result = await deleteExpense(e.id) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setDeleteTarget(null);
       router.refresh();

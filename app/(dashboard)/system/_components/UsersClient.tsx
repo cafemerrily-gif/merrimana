@@ -93,7 +93,7 @@ export default function UsersClient({
     if (inviteForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
-      const result = await inviteUser(inviteForm);
+      const result = await inviteUser(inviteForm) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setInviteModal(false);
       window.location.reload();
@@ -106,7 +106,7 @@ export default function UsersClient({
     if (editForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
-      const result = await updateProfile(editTarget.id, editForm);
+      const result = await updateProfile(editTarget.id, editForm) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setUsers((prev) =>
         prev.map((u) => u.id === editTarget.id ? { ...u, ...editForm } : u)
@@ -118,7 +118,7 @@ export default function UsersClient({
   const handleDelete = () => {
     if (!deleteTarget) return;
     startTransition(async () => {
-      const result = await deleteUser(deleteTarget.id);
+      const result = await deleteUser(deleteTarget.id) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
       setDeleteTarget(null);

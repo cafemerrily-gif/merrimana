@@ -38,7 +38,7 @@ export default function RolesClient({
       const serialized = Object.fromEntries(
         UNITS.map((u) => [u, Array.from(matrix[u])])
       );
-      const result = await savePermissions(serialized);
+      const result = await savePermissions(serialized) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

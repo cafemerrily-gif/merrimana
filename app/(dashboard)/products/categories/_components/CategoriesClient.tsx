@@ -57,30 +57,22 @@ export default function CategoriesClient({
     setError(null);
     if (!form.name.trim()) return setError("カテゴリ名は必須です");
     startTransition(async () => {
-      try {
-        const data = { name: form.name.trim(), description: form.description.trim(), color: form.color };
-        if (modal?.mode === "edit") {
-          await updateCategory(modal.category.id, data);
-        } else {
-          await createCategory(data);
-        }
-        setModal(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const data = { name: form.name.trim(), description: form.description.trim(), color: form.color };
+      const result = (modal?.mode === "edit"
+        ? await updateCategory(modal.category.id, data)
+        : await createCategory(data)) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setModal(null);
+      router.refresh();
     });
   };
 
   const handleDelete = (c: CategoryWithCount) => {
     startTransition(async () => {
-      try {
-        await deleteCategory(c.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteCategory(c.id) as { error?: string };
+      if (result.error) { setError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 

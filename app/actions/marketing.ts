@@ -20,12 +20,16 @@ export async function createCampaign(data: {
   end_date: string | null;
   status: string;
   tags: string[];
-}) {
-  const supabase = createAdminClient();
-  const { data: row, error } = await supabase.from("campaigns").insert(data).select().single();
-  if (error) throw new Error(error.message);
-  revalidateMarketing();
-  return row;
+}): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: row, error } = await supabase.from("campaigns").insert(data).select().single();
+    if (error) return { error: error.message };
+    revalidateMarketing();
+    return { data: row };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updateCampaign(
@@ -38,19 +42,28 @@ export async function updateCampaign(
     status: string;
     tags: string[];
   }
-) {
-  const supabase = createAdminClient();
-  const { data: row, error } = await supabase.from("campaigns").update(data).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
-  revalidateMarketing();
-  return row;
+): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: row, error } = await supabase.from("campaigns").update(data).eq("id", id).select().single();
+    if (error) return { error: error.message };
+    revalidateMarketing();
+    return { data: row };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deleteCampaign(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("campaigns").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateMarketing();
+export async function deleteCampaign(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("campaigns").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidateMarketing();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -64,13 +77,17 @@ export async function createPrActivity(data: {
   scheduled_at: string | null;
   status: string;
   campaign_id: string | null;
-}) {
-  const supabase = createAdminClient();
-  const { data: row, error } = await supabase.from("pr_activities").insert(data).select().single();
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/pr");
-  revalidatePath("/marketing/analytics");
-  return row;
+}): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: row, error } = await supabase.from("pr_activities").insert(data).select().single();
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/pr");
+    revalidatePath("/marketing/analytics");
+    return { data: row };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updatePrActivity(
@@ -83,21 +100,30 @@ export async function updatePrActivity(
     status: string;
     campaign_id: string | null;
   }
-) {
-  const supabase = createAdminClient();
-  const { data: row, error } = await supabase.from("pr_activities").update(data).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/pr");
-  revalidatePath("/marketing/analytics");
-  return row;
+): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: row, error } = await supabase.from("pr_activities").update(data).eq("id", id).select().single();
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/pr");
+    revalidatePath("/marketing/analytics");
+    return { data: row };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deletePrActivity(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("pr_activities").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/pr");
-  revalidatePath("/marketing/analytics");
+export async function deletePrActivity(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("pr_activities").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/pr");
+    revalidatePath("/marketing/analytics");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -111,27 +137,42 @@ export async function insertMediaAsset(data: {
   file_size: number;
   mime_type: string;
   tags: string[];
-}) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("media_assets").insert(data);
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/media");
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("media_assets").insert(data);
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/media");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updateMediaAsset(
   id: string,
   data: { name: string; tags: string[]; campaign_id: string | null }
-) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("media_assets").update(data).eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/media");
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("media_assets").update(data).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/media");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deleteMediaAsset(id: string, filePath: string) {
-  const supabase = createAdminClient();
-  await supabase.storage.from("marketing").remove([filePath]);
-  const { error } = await supabase.from("media_assets").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/marketing/media");
+export async function deleteMediaAsset(id: string, filePath: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    await supabase.storage.from("marketing").remove([filePath]);
+    const { error } = await supabase.from("media_assets").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/marketing/media");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }

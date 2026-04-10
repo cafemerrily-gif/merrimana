@@ -98,13 +98,13 @@ export default function CampaignsClient({
 
     startTransition(async () => {
       if (modal?.mode === "edit") {
-        const result = await updateCampaign(modal.campaign.id, data);
+        const result = await updateCampaign(modal.campaign.id, data) as { data?: unknown; error?: string };
         if (result.error) { setError(result.error); return; }
-        setCampaigns((prev) => prev.map((c) => (c.id === modal.campaign.id ? (result.data as unknown as Campaign) : c)));
+        setCampaigns((prev) => prev.map((c) => (c.id === modal.campaign.id ? (result.data as Campaign) : c)));
       } else {
-        const result = await createCampaign(data);
+        const result = await createCampaign(data) as { data?: unknown; error?: string };
         if (result.error) { setError(result.error); return; }
-        setCampaigns((prev) => [result.data as unknown as Campaign, ...prev]);
+        setCampaigns((prev) => [result.data as Campaign, ...prev]);
       }
       setModal(null);
     });
@@ -112,7 +112,7 @@ export default function CampaignsClient({
 
   const handleDelete = (c: Campaign) => {
     startTransition(async () => {
-      const result = await deleteCampaign(c.id);
+      const result = await deleteCampaign(c.id) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
       setDeleteTarget(null);

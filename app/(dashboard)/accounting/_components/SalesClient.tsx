@@ -143,10 +143,10 @@ export default function SalesClient({
         };
 
         if (modal?.mode === "edit") {
-          const result = await updateSale(modal.sale.id, data);
+          const result = await updateSale(modal.sale.id, data) as { error?: string };
           if (result.error) { setError(result.error); return; }
         } else {
-          const result = await createSale(data);
+          const result = await createSale(data) as { error?: string };
           if (result.error) { setError(result.error); return; }
         }
         setModal(null);
@@ -159,7 +159,7 @@ export default function SalesClient({
 
   const handleDelete = (s: Sale) => {
     startTransition(async () => {
-      const result = await deleteSale(s.id);
+      const result = await deleteSale(s.id) as { error?: string };
       if (result.error) { setError(result.error); return; }
       setDeleteTarget(null);
       router.refresh();

@@ -3,6 +3,12 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+const REVALIDATE_PRODUCTS = () => {
+  revalidatePath("/products");
+  revalidatePath("/products/cost");
+  revalidatePath("/accounting");
+};
+
 // ----------------------------------------------------------------
 // Products
 // ----------------------------------------------------------------
@@ -14,13 +20,16 @@ export async function createProduct(data: {
   status: string;
   sale_start: string | null;
   sale_end: string | null;
-}) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("products").insert(data);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products");
-  revalidatePath("/products/cost");
-  revalidatePath("/accounting");
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("products").insert(data);
+    if (error) return { error: error.message };
+    REVALIDATE_PRODUCTS();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updateProduct(
@@ -33,22 +42,30 @@ export async function updateProduct(
     sale_start: string | null;
     sale_end: string | null;
   }
-) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("products").update(data).eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products");
-  revalidatePath("/products/cost");
-  revalidatePath("/accounting");
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("products").update(data).eq("id", id);
+    if (error) return { error: error.message };
+    REVALIDATE_PRODUCTS();
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deleteProduct(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products");
-  revalidatePath("/products/cost");
-  revalidatePath("/products/recipes");
+export async function deleteProduct(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/products");
+    revalidatePath("/products/cost");
+    revalidatePath("/products/recipes");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -59,31 +76,46 @@ export async function createCategory(data: {
   name: string;
   description: string;
   color: string;
-}) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("categories").insert(data);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products/categories");
-  revalidatePath("/products");
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("categories").insert(data);
+    if (error) return { error: error.message };
+    revalidatePath("/products/categories");
+    revalidatePath("/products");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
+  }
 }
 
 export async function updateCategory(
   id: string,
   data: { name: string; description: string; color: string }
-) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("categories").update(data).eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products/categories");
-  revalidatePath("/products");
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("categories").update(data).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/products/categories");
+    revalidatePath("/products");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
+  }
 }
 
-export async function deleteCategory(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("categories").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products/categories");
-  revalidatePath("/products");
+export async function deleteCategory(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/products/categories");
+    revalidatePath("/products");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
 
 // ----------------------------------------------------------------
@@ -97,28 +129,33 @@ export async function createRecipe(data: {
   yield_count: number;
   time_minutes: number;
   ingredients: IngredientInput[];
-}) {
-  const supabase = createAdminClient();
-  const { data: recipe, error } = await supabase
-    .from("recipes")
-    .insert({
-      product_id: data.product_id,
-      yield_count: data.yield_count,
-      time_minutes: data.time_minutes,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data: recipe, error } = await supabase
+      .from("recipes")
+      .insert({
+        product_id: data.product_id,
+        yield_count: data.yield_count,
+        time_minutes: data.time_minutes,
+      })
+      .select()
+      .single();
+    if (error) return { error: error.message };
 
-  if (data.ingredients.length > 0) {
-    const { error: ingError } = await supabase
-      .from("recipe_ingredients")
-      .insert(data.ingredients.map((i) => ({ ...i, recipe_id: recipe.id })));
-    if (ingError) throw new Error(ingError.message);
+    if (data.ingredients.length > 0) {
+      const { error: ingError } = await supabase
+        .from("recipe_ingredients")
+        .insert(data.ingredients.map((i) => ({ ...i, recipe_id: recipe.id })));
+      if (ingError) return { error: ingError.message };
+    }
+
+    revalidatePath("/products/recipes");
+    revalidatePath("/products/cost");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "作成に失敗しました" };
   }
-
-  revalidatePath("/products/recipes");
-  revalidatePath("/products/cost");
 }
 
 export async function updateRecipe(
@@ -129,32 +166,40 @@ export async function updateRecipe(
     time_minutes: number;
     ingredients: IngredientInput[];
   }
-) {
-  const supabase = createAdminClient();
+): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("recipes")
+      .update({ product_id: data.product_id, yield_count: data.yield_count, time_minutes: data.time_minutes })
+      .eq("id", id);
+    if (error) return { error: error.message };
 
-  const { error } = await supabase
-    .from("recipes")
-    .update({ product_id: data.product_id, yield_count: data.yield_count, time_minutes: data.time_minutes })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+    await supabase.from("recipe_ingredients").delete().eq("recipe_id", id);
+    if (data.ingredients.length > 0) {
+      const { error: ingError } = await supabase
+        .from("recipe_ingredients")
+        .insert(data.ingredients.map((i) => ({ ...i, recipe_id: id })));
+      if (ingError) return { error: ingError.message };
+    }
 
-  // 材料を全件洗い替え
-  await supabase.from("recipe_ingredients").delete().eq("recipe_id", id);
-  if (data.ingredients.length > 0) {
-    const { error: ingError } = await supabase
-      .from("recipe_ingredients")
-      .insert(data.ingredients.map((i) => ({ ...i, recipe_id: id })));
-    if (ingError) throw new Error(ingError.message);
+    revalidatePath("/products/recipes");
+    revalidatePath("/products/cost");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "更新に失敗しました" };
   }
-
-  revalidatePath("/products/recipes");
-  revalidatePath("/products/cost");
 }
 
-export async function deleteRecipe(id: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("recipes").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/products/recipes");
-  revalidatePath("/products/cost");
+export async function deleteRecipe(id: string): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("recipes").delete().eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath("/products/recipes");
+    revalidatePath("/products/cost");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "削除に失敗しました" };
+  }
 }
