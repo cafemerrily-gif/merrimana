@@ -23,13 +23,10 @@ export default function ConfirmInner() {
     const code = searchParams.get("code");
 
     const onSuccess = () => setStep("set-password");
-    const onError = (msg: string) => {
-      setErrorMsg(msg);
-      setStep("error");
-    };
+    const onError = (msg: string) => { setErrorMsg(msg); setStep("error"); };
 
+    // ① PKCE フロー: ?code=xxx
     if (code) {
-      // PKCE フロー: code をセッションと交換
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) onError(`認証エラー: ${error.message}`);
         else onSuccess();
@@ -37,8 +34,8 @@ export default function ConfirmInner() {
       return;
     }
 
+    // ② OTP フロー: ?token_hash=xxx&type=invite
     if (tokenHash && type) {
-      // OTP / invite フロー
       supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error }) => {
         if (error) {
           onError(
@@ -53,7 +50,22 @@ export default function ConfirmInner() {
       return;
     }
 
-    // code も token_hash もない場合は無効なリンク
+    // ③ ハッシュフラグメント フロー: #access_token=xxx（implicit flow）
+    const hash = window.location.hash;
+    if (hash.includes("access_token=")) {
+      const params = new URLSearchParams(hash.replace(/^#/, ""));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token") ?? "";
+      if (accessToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ error }) => {
+            if (error) onError(`認証エラー: ${error.message}`);
+            else onSuccess();
+          });
+        return;
+      }
+    }
+
     onError("無効なリンクです。招待メールのリンクを再度お試しください。");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
