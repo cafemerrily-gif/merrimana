@@ -93,13 +93,10 @@ export default function UsersClient({
     if (inviteForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
-      try {
-        await inviteUser(inviteForm);
-        setInviteModal(false);
-        window.location.reload();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "招待に失敗しました");
-      }
+      const result = await inviteUser(inviteForm);
+      if (result.error) { setError(result.error); return; }
+      setInviteModal(false);
+      window.location.reload();
     });
   };
 
@@ -109,28 +106,22 @@ export default function UsersClient({
     if (editForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
-      try {
-        await updateProfile(editTarget.id, editForm);
-        setUsers((prev) =>
-          prev.map((u) => u.id === editTarget.id ? { ...u, ...editForm } : u)
-        );
-        setEditTarget(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "更新に失敗しました");
-      }
+      const result = await updateProfile(editTarget.id, editForm);
+      if (result.error) { setError(result.error); return; }
+      setUsers((prev) =>
+        prev.map((u) => u.id === editTarget.id ? { ...u, ...editForm } : u)
+      );
+      setEditTarget(null);
     });
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
     startTransition(async () => {
-      try {
-        await deleteUser(deleteTarget.id);
-        setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
-        setDeleteTarget(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteUser(deleteTarget.id);
+      if (result.error) { setError(result.error); return; }
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      setDeleteTarget(null);
     });
   };
 

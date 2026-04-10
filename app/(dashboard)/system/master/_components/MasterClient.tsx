@@ -25,13 +25,10 @@ export default function MasterClient({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      try {
-        await saveSettings(Object.entries(s).map(([key, value]) => ({ key, value })));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "保存に失敗しました");
-      }
+      const result = await saveSettings(Object.entries(s).map(([key, value]) => ({ key, value })));
+      if (result.error) { setError(result.error); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     });
   };
 

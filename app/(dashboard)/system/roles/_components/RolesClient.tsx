@@ -35,16 +35,13 @@ export default function RolesClient({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      try {
-        const serialized = Object.fromEntries(
-          UNITS.map((u) => [u, Array.from(matrix[u])])
-        );
-        await savePermissions(serialized);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const serialized = Object.fromEntries(
+        UNITS.map((u) => [u, Array.from(matrix[u])])
+      );
+      const result = await savePermissions(serialized);
+      if (result.error) { setError(result.error); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     });
   };
 
