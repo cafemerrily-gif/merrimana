@@ -22,9 +22,10 @@ export async function createCampaign(data: {
   tags: string[];
 }) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from("campaigns").insert(data);
+  const { data: row, error } = await supabase.from("campaigns").insert(data).select().single();
   if (error) throw new Error(error.message);
   revalidateMarketing();
+  return row;
 }
 
 export async function updateCampaign(
@@ -39,9 +40,10 @@ export async function updateCampaign(
   }
 ) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from("campaigns").update(data).eq("id", id);
+  const { data: row, error } = await supabase.from("campaigns").update(data).eq("id", id).select().single();
   if (error) throw new Error(error.message);
   revalidateMarketing();
+  return row;
 }
 
 export async function deleteCampaign(id: string) {
@@ -64,10 +66,11 @@ export async function createPrActivity(data: {
   campaign_id: string | null;
 }) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from("pr_activities").insert(data);
+  const { data: row, error } = await supabase.from("pr_activities").insert(data).select().single();
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/pr");
   revalidatePath("/marketing/analytics");
+  return row;
 }
 
 export async function updatePrActivity(
@@ -82,10 +85,11 @@ export async function updatePrActivity(
   }
 ) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from("pr_activities").update(data).eq("id", id);
+  const { data: row, error } = await supabase.from("pr_activities").update(data).eq("id", id).select().single();
   if (error) throw new Error(error.message);
   revalidatePath("/marketing/pr");
   revalidatePath("/marketing/analytics");
+  return row;
 }
 
 export async function deletePrActivity(id: string) {

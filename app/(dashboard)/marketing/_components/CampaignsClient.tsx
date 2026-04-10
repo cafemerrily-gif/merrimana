@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Calendar, Tag, X } from "lucide-react";
 import { Modal, inputCls, FieldLabel } from "@/components/ui/modal";
 import { createCampaign, updateCampaign, deleteCampaign } from "@/app/actions/marketing";
@@ -41,14 +40,14 @@ function formatPeriod(start: string | null, end: string | null) {
 }
 
 export default function CampaignsClient({
-  campaigns,
+  campaigns: initialCampaigns,
   dbError,
 }: {
   campaigns: Campaign[];
   dbError: boolean;
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | "すべて">("すべて");
   const [modal, setModal] = useState<
     null | { mode: "add" } | { mode: "edit"; campaign: Campaign }
@@ -100,12 +99,13 @@ export default function CampaignsClient({
     startTransition(async () => {
       try {
         if (modal?.mode === "edit") {
-          await updateCampaign(modal.campaign.id, data);
+          const updated = await updateCampaign(modal.campaign.id, data);
+          setCampaigns((prev) => prev.map((c) => (c.id === modal.campaign.id ? (updated as Campaign) : c)));
         } else {
-          await createCampaign(data);
+          const created = await createCampaign(data);
+          setCampaigns((prev) => [created as Campaign, ...prev]);
         }
         setModal(null);
-        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "保存に失敗しました");
       }
@@ -116,8 +116,8 @@ export default function CampaignsClient({
     startTransition(async () => {
       try {
         await deleteCampaign(c.id);
+        setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
         setDeleteTarget(null);
-        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "削除に失敗しました");
       }

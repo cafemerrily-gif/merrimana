@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, CalendarDays, Tag } from "lucide-react";
 import {
   createPrActivity,
@@ -41,7 +40,7 @@ const defaultForm = (): FormState => ({
 });
 
 export default function PrActivityClient({
-  activities,
+  activities: initialActivities,
   campaigns,
   usedChannels,
   dbError,
@@ -53,8 +52,8 @@ export default function PrActivityClient({
 }) {
   // 定義済みチャネル + DB内カスタムチャネルをマージ
   const allChannelSuggestions = Array.from(new Set([...PR_CHANNELS, ...usedChannels]));
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [activities, setActivities] = useState<PrActivity[]>(initialActivities);
   const [statusFilter, setStatusFilter] = useState<PrActivityStatus | "すべて">("すべて");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PrActivity | null>(null);
@@ -100,12 +99,13 @@ export default function PrActivityClient({
     startTransition(async () => {
       try {
         if (editTarget) {
-          await updatePrActivity(editTarget.id, payload);
+          const updated = await updatePrActivity(editTarget.id, payload);
+          setActivities((prev) => prev.map((a) => (a.id === editTarget.id ? (updated as PrActivity) : a)));
         } else {
-          await createPrActivity(payload);
+          const created = await createPrActivity(payload);
+          setActivities((prev) => [...prev, created as PrActivity]);
         }
         setIsModalOpen(false);
-        router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "保存に失敗しました");
       }
@@ -117,8 +117,8 @@ export default function PrActivityClient({
     startTransition(async () => {
       try {
         await deletePrActivity(deleteTarget.id);
+        setActivities((prev) => prev.filter((a) => a.id !== deleteTarget.id));
         setDeleteTarget(null);
-        router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "削除に失敗しました");
       }
