@@ -34,6 +34,7 @@ import {
   CalendarDays,
   PackageSearch,
   ShoppingCart,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -76,8 +77,9 @@ const sectionSubNav: Record<
   ],
   "/store": [
     { href: "/store",            icon: ClipboardList, label: "日報" },
-    { href: "/store/shift",      icon: CalendarDays,  label: "シフト管理" },
-    { href: "/store/inventory",  icon: PackageSearch, label: "在庫チェック" },
+    { href: "/store/timecard",   icon: Clock,         label: "タイムカード" },
+    { href: "/store/shift",      icon: CalendarDays,  label: "シフト表" },
+    { href: "/store/inventory",  icon: PackageSearch, label: "在庫管理" },
     { href: "/store/orders",     icon: ShoppingCart,  label: "発注管理" },
   ],
 };
