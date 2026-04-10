@@ -150,13 +150,13 @@ export async function deleteInventoryItem(id: string): Promise<{ error?: string 
   }
 }
 
-// ── Shifts ────────────────────────────────────────────────────────────────────
+// ── Weekly Shifts ──────────────────────────────────────────────────────────────
 
-export async function upsertShift(data: {
+export async function upsertWeeklyShift(data: {
   id?: string;
+  period_key: string;
+  day_of_week: number;
   staff_name: string;
-  role: string;
-  date: string;
   start_time: string;
   end_time: string;
   notes: string;
@@ -165,10 +165,10 @@ export async function upsertShift(data: {
     const supabase = createAdminClient();
     const { id, ...rest } = data;
     if (id) {
-      const { error } = await supabase.from("shifts").update(rest).eq("id", id);
+      const { error } = await supabase.from("weekly_shifts").update(rest).eq("id", id);
       if (error) return { error: error.message };
     } else {
-      const { error } = await supabase.from("shifts").insert(rest);
+      const { error } = await supabase.from("weekly_shifts").insert(rest);
       if (error) return { error: error.message };
     }
     revalidatePath("/store/shift");
@@ -178,10 +178,10 @@ export async function upsertShift(data: {
   }
 }
 
-export async function deleteShift(id: string): Promise<{ error?: string }> {
+export async function deleteWeeklyShift(id: string): Promise<{ error?: string }> {
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase.from("shifts").delete().eq("id", id);
+    const { error } = await supabase.from("weekly_shifts").delete().eq("id", id);
     if (error) return { error: error.message };
     revalidatePath("/store/shift");
     return {};

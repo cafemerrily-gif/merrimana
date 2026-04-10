@@ -1,12 +1,12 @@
 export type Period = { year: number; half: 1 | 2 };
 
-export type ShiftRow = {
+export type WeeklyShiftRow = {
   id: string;
+  period_key: string;
+  day_of_week: number; // 0=月, 1=火, 2=水, 3=木, 4=金, 5=土, 6=日
   staff_name: string;
-  role: string;
-  date: string;
-  start_time: string;
-  end_time: string;
+  start_time: string; // 'HH:MM'
+  end_time: string;   // 'HH:MM'
   notes: string;
 };
 
