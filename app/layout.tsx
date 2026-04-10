@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "メリマネ",
   description: "メリリーカフェ 社内管理システム",
-  // manifest は app/manifest.ts が自動で <link rel="manifest"> を出力するため不要
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
