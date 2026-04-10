@@ -51,10 +51,11 @@ const sectionSubNav: Record<
   { href: string; icon: React.ElementType; label: string; permission?: string }[]
 > = {
   "/accounting": [
-    { href: "/accounting",          icon: TrendingUp, label: "売上管理" },
-    { href: "/accounting/expenses", icon: Receipt,    label: "支出管理" },
-    { href: "/accounting/pl",       icon: PieChart,   label: "損益計算書" },
-    { href: "/accounting/budget",   icon: Wallet,     label: "予算管理" },
+    { href: "/accounting",            icon: TrendingUp, label: "売上管理" },
+    { href: "/accounting/expenses",   icon: Receipt,    label: "支出管理" },
+    { href: "/accounting/pl",         icon: PieChart,   label: "損益計算書" },
+    { href: "/accounting/budget",     icon: Wallet,     label: "予算管理" },
+    { href: "/accounting/analytics",  icon: LineChart,  label: "アナリティクス" },
   ],
   "/products": [
     { href: "/products",            icon: UtensilsCrossed, label: "商品一覧" },
