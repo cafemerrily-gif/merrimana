@@ -150,6 +150,27 @@ export async function deleteInventoryItem(id: string): Promise<{ error?: string 
   }
 }
 
+// ── Daily Reports ─────────────────────────────────────────────────────────────
+
+export async function submitDailyReport(data: {
+  date: string;
+  content: string;
+  submitted_by: string;
+}): Promise<{ error?: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("daily_reports").upsert(
+      { ...data, updated_at: new Date().toISOString() },
+      { onConflict: "date" }
+    );
+    if (error) return { error: error.message };
+    revalidatePath("/store");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "エラーが発生しました" };
+  }
+}
+
 // ── Weekly Shifts ──────────────────────────────────────────────────────────────
 
 export async function upsertWeeklyShift(data: {

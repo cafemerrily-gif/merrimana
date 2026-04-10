@@ -1,149 +1,139 @@
-"use client";
+import { createClient } from "@/utils/supabase/server";
+import { getCurrentPeriod, getPeriodKey } from "./shift/_lib/periods";
+import DailyReportForm from "./_components/DailyReportForm";
 
-import { useState } from "react";
-import { CheckCircle2, Circle, Send } from "lucide-react";
+const WEEK_DAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
-const TODAY_SHIFTS = [
-  { name: "伊藤 花", role: "ホール", time: "09:00〜14:00", status: "出勤済" },
-  { name: "渡辺 大輔", role: "キッチン", time: "09:00〜15:00", status: "出勤済" },
-  { name: "山田 美咲", role: "ホール", time: "13:00〜18:00", status: "未出勤" },
-  { name: "小林 翔", role: "キッチン", time: "14:00〜19:00", status: "未出勤" },
-];
+function jsDowToMyDow(jsDay: number): number {
+  return jsDay === 0 ? 6 : jsDay - 1;
+}
 
-const CHECKLIST_ITEMS = [
-  { id: 1, label: "開店前の清掃（ホール）" },
-  { id: 2, label: "コーヒー豆の補充確認" },
-  { id: 3, label: "冷蔵庫温度チェック（5℃以下）" },
-  { id: 4, label: "POSレジの起動・精算確認" },
-  { id: 5, label: "ショーケース商品の陳列" },
-  { id: 6, label: "トイレ清掃・備品補充" },
-];
+function getDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
-export default function StorePage() {
-  const [checked, setChecked] = useState<number[]>([1, 2]);
-  const [reportText, setReportText] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+export default async function StorePage() {
+  const today = new Date();
+  const todayStr = getDateStr(today);
+  const todayDow = jsDowToMyDow(today.getDay());
 
-  const toggle = (id: number) =>
-    setChecked((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+  const period = getCurrentPeriod(today);
+  const periodKey = getPeriodKey(period);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (reportText.trim()) setSubmitted(true);
-  };
+  type ShiftEntry = { id: string; staff_name: string; start_time: string; end_time: string; notes: string };
+  type TimecardEntry = { staff_name: string; clock_in: string | null };
+  type DailyReport = { content: string; submitted_by: string } | null;
+
+  let todayShifts: ShiftEntry[] = [];
+  let timecards: TimecardEntry[] = [];
+  let dailyReport: DailyReport = null;
+  let currentUserName = "";
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const [shiftsRes, timecardsRes, reportRes, profileRes] = await Promise.all([
+      supabase
+        .from("weekly_shifts")
+        .select("id, staff_name, start_time, end_time, notes")
+        .eq("period_key", periodKey)
+        .eq("day_of_week", todayDow)
+        .order("start_time", { ascending: true }),
+      supabase
+        .from("timecards")
+        .select("staff_name, clock_in")
+        .eq("date", todayStr),
+      supabase
+        .from("daily_reports")
+        .select("content, submitted_by")
+        .eq("date", todayStr)
+        .maybeSingle(),
+      user
+        ? supabase.from("profiles").select("name").eq("id", user.id).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    todayShifts = (shiftsRes.data ?? []) as ShiftEntry[];
+    timecards   = (timecardsRes.data ?? []) as TimecardEntry[];
+    dailyReport = (reportRes.data ?? null) as DailyReport;
+    currentUserName = (profileRes.data as { name?: string } | null)?.name ?? "";
+  } catch {
+    // DB unavailable
+  }
+
+  // タイムカード情報を staff_name でインデックス化
+  const timecardMap: Record<string, TimecardEntry> = {};
+  for (const t of timecards) {
+    timecardMap[t.staff_name] = t;
+  }
+
+  const dayLabel = `${today.getMonth() + 1}月${today.getDate()}日（${WEEK_DAYS[todayDow]}）`;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">日報</h1>
-        <p className="text-sm text-neutral-500 mt-0.5">店舗スタッフユニット</p>
+        <p className="text-sm text-neutral-500 mt-0.5">{dayLabel}</p>
       </div>
 
       {/* 本日のシフト */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">本日のシフト</h2>
+          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+            本日のシフト
+          </h2>
         </div>
-        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-          {TODAY_SHIFTS.map((s) => (
-            <div key={s.name} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.name}</p>
-                <p className="text-xs text-neutral-400">{s.role} · {s.time}</p>
-              </div>
-              <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  s.status === "出勤済"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                    : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800"
-                }`}
-              >
-                {s.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 開店チェックリスト */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-        <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">開店チェックリスト</h2>
-          <span className="text-xs text-neutral-400">
-            {checked.length}/{CHECKLIST_ITEMS.length} 完了
-          </span>
-        </div>
-        {/* プログレスバー */}
-        <div className="h-1 bg-neutral-100 dark:bg-neutral-800">
-          <div
-            className="h-full bg-blue-500 transition-all duration-300"
-            style={{ width: `${(checked.length / CHECKLIST_ITEMS.length) * 100}%` }}
-          />
-        </div>
-        <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-          {CHECKLIST_ITEMS.map((item) => {
-            const done = checked.includes(item.id);
-            return (
-              <li key={item.id}>
-                <button
-                  onClick={() => toggle(item.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                >
-                  {done ? (
-                    <CheckCircle2 size={18} className="text-blue-500 shrink-0" />
-                  ) : (
-                    <Circle size={18} className="text-neutral-300 dark:text-neutral-600 shrink-0" />
-                  )}
+        {todayShifts.length === 0 ? (
+          <p className="text-sm text-neutral-400 px-4 py-5 text-center">
+            本日のシフト登録がありません
+          </p>
+        ) : (
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {todayShifts.map((s) => {
+              const tc = timecardMap[s.staff_name];
+              const clockedIn = !!tc?.clock_in;
+              return (
+                <div key={s.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {s.staff_name}
+                    </p>
+                    <p className="text-xs text-neutral-400">
+                      {s.start_time}〜{s.end_time}
+                      {s.notes && ` · ${s.notes}`}
+                    </p>
+                  </div>
                   <span
-                    className={`text-sm ${
-                      done
-                        ? "line-through text-neutral-400"
-                        : "text-neutral-700 dark:text-neutral-300"
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      clockedIn
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
                     }`}
                   >
-                    {item.label}
+                    {clockedIn ? "出勤済" : "未出勤"}
                   </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 日報フォーム */}
+      {/* 本日の報告 */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">本日の報告</h2>
+          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+            本日の報告
+          </h2>
         </div>
         <div className="p-4">
-          {submitted ? (
-            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium py-2">
-              <CheckCircle2 size={18} />
-              日報を提出しました
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <textarea
-                value={reportText}
-                onChange={(e) => setReportText(e.target.value)}
-                placeholder="本日の営業状況、特記事項、改善提案などを記入してください..."
-                rows={5}
-                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-              />
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={!reportText.trim()}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Send size={14} />
-                  提出する
-                </button>
-              </div>
-            </form>
-          )}
+          <DailyReportForm
+            date={todayStr}
+            existingContent={dailyReport?.content ?? null}
+            submittedBy={dailyReport?.submitted_by ?? null}
+            currentUserName={currentUserName}
+          />
         </div>
       </div>
     </div>
