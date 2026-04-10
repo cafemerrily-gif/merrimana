@@ -41,7 +41,7 @@ export default function LoginPage() {
             <Coffee size={24} className="text-white dark:text-neutral-900" />
           </div>
           <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-            Merrimana
+            メリマネ
           </h1>
           <p className="text-sm text-neutral-500 mt-1">管理システム</p>
         </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-neutral-400 mt-8">
-          © 2025 Merrimana Café. All rights reserved.
+          © 2026 MERRILY. All rights reserved.
         </p>
       </div>
     </div>
