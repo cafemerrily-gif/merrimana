@@ -11,6 +11,7 @@ export interface SaleItem {
 export interface Sale {
   id: string;
   date: string;
+  time_slot: string | null;
   amount: number;
   customer_count: number;
   notes: string;

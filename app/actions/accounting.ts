@@ -23,6 +23,7 @@ type SaleItemInput = {
 
 export async function createSale(data: {
   date: string;
+  time_slot: string | null;
   amount: number;
   customer_count: number;
   notes: string;
@@ -32,7 +33,7 @@ export async function createSale(data: {
     const supabase = createAdminClient();
     const { data: sale, error } = await supabase
       .from("sales")
-      .insert({ date: data.date, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
+      .insert({ date: data.date, time_slot: data.time_slot, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
       .select()
       .single();
     if (error) return { error: error.message };
@@ -55,6 +56,7 @@ export async function updateSale(
   id: string,
   data: {
     date: string;
+    time_slot: string | null;
     amount: number;
     customer_count: number;
     notes: string;
@@ -65,7 +67,7 @@ export async function updateSale(
     const supabase = createAdminClient();
     const { error } = await supabase
       .from("sales")
-      .update({ date: data.date, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
+      .update({ date: data.date, time_slot: data.time_slot, amount: data.amount, customer_count: data.customer_count, notes: data.notes })
       .eq("id", id);
     if (error) return { error: error.message };
 

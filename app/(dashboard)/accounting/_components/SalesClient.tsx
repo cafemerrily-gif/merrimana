@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, TrendingUp, Users, DollarSign, ChevronDown, Chevr
 import { Modal, inputCls, FieldLabel } from "@/components/ui/modal";
 import { createSale, updateSale, deleteSale } from "@/app/actions/accounting";
 import type { Sale, ProductForSale } from "@/types/accounting";
+import type { SettingsMap } from "../../system/master/page";
 
 type ItemQuantity = {
   product_id: string;
@@ -16,6 +17,7 @@ type ItemQuantity = {
 
 type FormState = {
   date: string;
+  time_slot: string;
   customer_count: string;
   notes: string;
   quantities: ItemQuantity[];
@@ -23,6 +25,22 @@ type FormState = {
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
+}
+
+/** 日付文字列からその曜日の時間帯スロット一覧を生成 */
+function getTimeSlots(settings: SettingsMap, date: string): string[] {
+  if (!date) return [];
+  const dow = new Date(date + "T00:00:00").getDay(); // 0=日〜6=土
+  if (settings[`hours_${dow}_closed`] === "true") return [];
+  const open = settings[`hours_${dow}_open`];
+  const close = settings[`hours_${dow}_close`];
+  if (!open || !close) return [];
+  const openH = parseInt(open.split(":")[0]);
+  const closeH = parseInt(close.split(":")[0]);
+  if (isNaN(openH) || isNaN(closeH) || closeH <= openH) return [];
+  return Array.from({ length: closeH - openH }, (_, i) =>
+    `${String(openH + i).padStart(2, "0")}:00`
+  );
 }
 
 function getAvailableProducts(products: ProductForSale[], date: string): ProductForSale[] {
@@ -53,10 +71,12 @@ function buildQuantities(
 export default function SalesClient({
   sales,
   products,
+  settings,
   dbError,
 }: {
   sales: Sale[];
   products: ProductForSale[];
+  settings: SettingsMap;
   dbError: boolean;
 }) {
   const router = useRouter();
@@ -65,6 +85,7 @@ export default function SalesClient({
   const [deleteTarget, setDeleteTarget] = useState<Sale | null>(null);
   const [form, setForm] = useState<FormState>({
     date: todayStr(),
+    time_slot: "",
     customer_count: "",
     notes: "",
     quantities: [],
@@ -74,8 +95,10 @@ export default function SalesClient({
 
   const openAdd = () => {
     const today = todayStr();
+    const slots = getTimeSlots(settings, today);
     setForm({
       date: today,
+      time_slot: slots[0] ?? "",
       customer_count: "",
       notes: "",
       quantities: buildQuantities(products, today),
@@ -87,6 +110,7 @@ export default function SalesClient({
   const openEdit = (s: Sale) => {
     setForm({
       date: s.date,
+      time_slot: s.time_slot ?? "",
       customer_count: String(s.customer_count),
       notes: s.notes,
       quantities: buildQuantities(products, s.date, s.sale_items),
@@ -96,9 +120,11 @@ export default function SalesClient({
   };
 
   const handleDateChange = (date: string) => {
+    const slots = getTimeSlots(settings, date);
     setForm((f) => ({
       ...f,
       date,
+      time_slot: slots[0] ?? "",
       quantities: buildQuantities(products, date, f.quantities),
     }));
   };
@@ -134,6 +160,7 @@ export default function SalesClient({
 
         const data = {
           date: form.date,
+          time_slot: form.time_slot || null,
           amount: total,
           customer_count: parseInt(form.customer_count) || 0,
           notes: form.notes,
@@ -319,7 +346,12 @@ export default function SalesClient({
                                 </button>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-xs text-neutral-400 tabular-nums">{s.date}</td>
+                            <td className="px-4 py-3 text-xs text-neutral-400 tabular-nums whitespace-nowrap">
+                              {s.date}
+                              {s.time_slot && (
+                                <span className="ml-1.5 text-blue-500 dark:text-blue-400">{s.time_slot}</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-right font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
                               ¥{s.amount.toLocaleString()}
                             </td>
@@ -399,17 +431,42 @@ export default function SalesClient({
                 className={inputCls()}
               />
             </FieldLabel>
-            <FieldLabel label="来客数（名）">
-              <input
-                type="number"
-                value={form.customer_count}
-                onChange={(e) => setForm({ ...form, customer_count: e.target.value })}
-                min="0"
-                placeholder="0"
-                className={inputCls()}
-              />
+            <FieldLabel label="時間帯">
+              {(() => {
+                const slots = getTimeSlots(settings, form.date);
+                if (slots.length === 0) {
+                  return (
+                    <p className="text-xs text-neutral-400 py-2">
+                      マスタ設定で営業時間を設定してください
+                    </p>
+                  );
+                }
+                return (
+                  <select
+                    value={form.time_slot}
+                    onChange={(e) => setForm({ ...form, time_slot: e.target.value })}
+                    className={inputCls()}
+                  >
+                    {slots.map((slot) => (
+                      <option key={slot} value={slot}>
+                        {slot}〜{String(parseInt(slot) + 1).padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                );
+              })()}
             </FieldLabel>
           </div>
+          <FieldLabel label="来客数（名）">
+            <input
+              type="number"
+              value={form.customer_count}
+              onChange={(e) => setForm({ ...form, customer_count: e.target.value })}
+              min="0"
+              placeholder="0"
+              className={inputCls()}
+            />
+          </FieldLabel>
 
           {/* 商品別数量入力 */}
           <div>

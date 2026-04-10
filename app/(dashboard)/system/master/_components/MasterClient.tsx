@@ -80,34 +80,62 @@ export default function MasterClient({
           </div>
         </section>
 
-        {/* 営業時間 */}
+        {/* 営業時間（曜日別） */}
         <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
           <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">営業時間</h2>
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">営業時間（曜日別）</h2>
+            <p className="text-xs text-neutral-400 mt-0.5">売上入力の時間帯スロットに使用されます</p>
           </div>
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-2">
+            <div className="grid grid-cols-[64px_1fr] gap-x-3 text-xs font-medium text-neutral-400 mb-1 px-1">
+              <span>曜日</span>
+              <span>開店 〜 閉店 　 定休</span>
+            </div>
             {([
-              { label: "月〜金", openKey: "hours_weekday_open",  closeKey: "hours_weekday_close" },
-              { label: "土曜日", openKey: "hours_saturday_open", closeKey: "hours_saturday_close" },
-              { label: "日・祝", openKey: "hours_holiday_open",  closeKey: "hours_holiday_close" },
-            ] as const).map(({ label, openKey, closeKey }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="text-sm text-neutral-600 dark:text-neutral-400 w-16 shrink-0">{label}</span>
-                <input
-                  type="time"
-                  value={s[openKey] ?? ""}
-                  onChange={(e) => set(openKey, e.target.value)}
-                  className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-                <span className="text-neutral-400 text-sm">〜</span>
-                <input
-                  type="time"
-                  value={s[closeKey] ?? ""}
-                  onChange={(e) => set(closeKey, e.target.value)}
-                  className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-            ))}
+              { dow: 1, label: "月" },
+              { dow: 2, label: "火" },
+              { dow: 3, label: "水" },
+              { dow: 4, label: "木" },
+              { dow: 5, label: "金" },
+              { dow: 6, label: "土" },
+              { dow: 0, label: "日" },
+            ] as const).map(({ dow, label }) => {
+              const openKey = `hours_${dow}_open` as const;
+              const closeKey = `hours_${dow}_close` as const;
+              const closedKey = `hours_${dow}_closed` as const;
+              const isClosed = s[closedKey] === "true";
+              return (
+                <div key={dow} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 w-16 shrink-0 text-center">
+                    {label}曜日
+                  </span>
+                  <input
+                    type="time"
+                    value={s[openKey] ?? ""}
+                    onChange={(e) => set(openKey, e.target.value)}
+                    disabled={isClosed}
+                    className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-40"
+                  />
+                  <span className="text-neutral-400 text-sm shrink-0">〜</span>
+                  <input
+                    type="time"
+                    value={s[closeKey] ?? ""}
+                    onChange={(e) => set(closeKey, e.target.value)}
+                    disabled={isClosed}
+                    className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-40"
+                  />
+                  <label className="flex items-center gap-1.5 ml-2 cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isClosed}
+                      onChange={(e) => set(closedKey, e.target.checked ? "true" : "false")}
+                      className="w-4 h-4 rounded accent-blue-600"
+                    />
+                    <span className="text-xs text-neutral-500">定休</span>
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </section>
 
