@@ -15,11 +15,14 @@ export async function getMyPermissions(): Promise<string[] | null> {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("unit")
+      .select("unit, role")
       .eq("id", user.id)
       .single();
 
-    if (!profile?.unit) return null; // プロフィール未設定 → 全許可（フォールバック）
+    if (!profile) return null; // プロフィール未設定 → 全許可（フォールバック）
+
+    // 管理者ロールはユニットに関係なく全権限を持つ
+    if (profile.role === "管理者") return null;
 
     const { data: perms, error } = await supabase
       .from("unit_permissions")

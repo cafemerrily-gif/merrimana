@@ -143,6 +143,16 @@ export default function RolesClient({
         </div>
       </div>
 
+      {/* 管理者ロールの説明 */}
+      <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/20 px-4 py-3 flex gap-3">
+        <span className="text-blue-500 text-sm mt-0.5">ℹ</span>
+        <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+          <p className="font-semibold">管理者ロールについて</p>
+          <p>役割が「管理者」に設定されているユーザーは、所属ユニットに関係なく<strong>すべての権限</strong>を自動的に持ちます。上のマトリクスの設定対象外です。</p>
+          <p>役割はユーザー管理ページの編集ボタンから変更できます。</p>
+        </div>
+      </div>
+
       <p className="text-xs text-neutral-400">
         ※ チェックマークをクリックして権限を切り替え、「変更を保存」で確定します。変更はすぐに反映されます。
       </p>
