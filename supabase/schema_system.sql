@@ -38,6 +38,14 @@ INSERT INTO settings (key, value) VALUES
 ON CONFLICT DO NOTHING;
 
 -- RLS
+-- ============================================================
+-- 招待フローのセットアップ（Supabase ダッシュボードで設定）
+-- Authentication → URL Configuration:
+--   Site URL:             https://your-app.vercel.app
+--   Redirect URLs に追加: https://your-app.vercel.app/auth/confirm
+-- ローカル開発用に追加:   http://localhost:3000/auth/confirm
+-- ============================================================
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "authenticated_all" ON profiles
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
