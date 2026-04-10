@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { requirePermission } from "@/utils/permissions";
 import UsersClient from "./_components/UsersClient";
 
 export type UserRow = {
@@ -13,6 +14,7 @@ export type UserRow = {
 };
 
 export default async function SystemPage() {
+  await requirePermission("manage_users");
   let users: UserRow[] = [];
   let dbError = false;
 

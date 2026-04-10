@@ -1,8 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import CampaignsClient from "./_components/CampaignsClient";
 import type { Campaign } from "@/types/marketing";
 
 export default async function MarketingPage() {
+  await requirePermission("view_marketing");
   let campaigns: Campaign[] = [];
   let dbError = false;
 

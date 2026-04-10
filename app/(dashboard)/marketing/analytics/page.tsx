@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import { cn } from "@/utils/cn";
 
 function pad(n: number) {
@@ -47,6 +48,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function AnalyticsPage() {
+  await requirePermission("view_marketing");
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);
   const year = now.getFullYear();

@@ -1,8 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import PrActivityClient from "./_components/PrActivityClient";
 import type { PrActivity } from "@/types/marketing";
 
 export default async function PrActivityPage() {
+  await requirePermission("view_marketing");
   let activities: PrActivity[] = [];
   let campaigns: { id: string; title: string }[] = [];
   let dbError = false;

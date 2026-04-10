@@ -1,8 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import MediaClient from "./_components/MediaClient";
 import type { MediaAsset } from "@/types/marketing";
 
 export default async function MediaPage() {
+  await requirePermission("view_marketing");
   let assets: MediaAsset[] = [];
   let bucketUrl = "";
   let dbError = false;
