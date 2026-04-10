@@ -36,13 +36,10 @@ export default function BudgetClient({
     if (isNaN(amount) || amount < 0) return setError("0以上の金額を入力してください");
 
     startTransition(async () => {
-      try {
-        await upsertBudget({ year, month, category: editTarget.category, amount });
-        setEditTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const result = await upsertBudget({ year, month, category: editTarget.category, amount });
+      if (result.error) { setError(result.error); return; }
+      setEditTarget(null);
+      router.refresh();
     });
   };
 

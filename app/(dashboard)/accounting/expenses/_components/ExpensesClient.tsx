@@ -83,36 +83,31 @@ export default function ExpensesClient({
     if (isNaN(amount) || amount < 0) return setError("金額を正しく入力してください");
 
     startTransition(async () => {
-      try {
-        const data = {
-          date: form.date,
-          category: form.category,
-          description: form.description.trim(),
-          vendor: form.vendor.trim(),
-          amount,
-        };
-        if (modal?.mode === "edit") {
-          await updateExpense(modal.expense.id, data);
-        } else {
-          await createExpense(data);
-        }
-        setModal(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
+      const data = {
+        date: form.date,
+        category: form.category,
+        description: form.description.trim(),
+        vendor: form.vendor.trim(),
+        amount,
+      };
+      let result: { error?: string };
+      if (modal?.mode === "edit") {
+        result = await updateExpense(modal.expense.id, data);
+      } else {
+        result = await createExpense(data);
       }
+      if (result.error) { setError(result.error); return; }
+      setModal(null);
+      router.refresh();
     });
   };
 
   const handleDelete = (e: Expense) => {
     startTransition(async () => {
-      try {
-        await deleteExpense(e.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteExpense(e.id);
+      if (result.error) { setError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 

@@ -142,11 +142,13 @@ export default function SalesClient({
           items,
         };
 
+        let result: { error?: string };
         if (modal?.mode === "edit") {
-          await updateSale(modal.sale.id, data);
+          result = await updateSale(modal.sale.id, data);
         } else {
-          await createSale(data);
+          result = await createSale(data);
         }
+        if (result.error) { setError(result.error); return; }
         setModal(null);
         router.refresh();
       } catch (e) {
@@ -157,13 +159,10 @@ export default function SalesClient({
 
   const handleDelete = (s: Sale) => {
     startTransition(async () => {
-      try {
-        await deleteSale(s.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteSale(s.id);
+      if (result.error) { setError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 

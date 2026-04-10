@@ -97,31 +97,26 @@ export default function PrActivityClient({
       campaign_id: form.campaign_id || null,
     };
     startTransition(async () => {
-      try {
-        if (editTarget) {
-          const updated = await updatePrActivity(editTarget.id, payload);
-          setActivities((prev) => prev.map((a) => (a.id === editTarget.id ? (updated as PrActivity) : a)));
-        } else {
-          const created = await createPrActivity(payload);
-          setActivities((prev) => [...prev, created as PrActivity]);
-        }
-        setIsModalOpen(false);
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : "保存に失敗しました");
+      if (editTarget) {
+        const result = await updatePrActivity(editTarget.id, payload);
+        if (result.error) { setActionError(result.error); return; }
+        setActivities((prev) => prev.map((a) => (a.id === editTarget.id ? (result.data as unknown as PrActivity) : a)));
+      } else {
+        const result = await createPrActivity(payload);
+        if (result.error) { setActionError(result.error); return; }
+        setActivities((prev) => [...prev, result.data as unknown as PrActivity]);
       }
+      setIsModalOpen(false);
     });
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
     startTransition(async () => {
-      try {
-        await deletePrActivity(deleteTarget.id);
-        setActivities((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-        setDeleteTarget(null);
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deletePrActivity(deleteTarget.id);
+      if (result.error) { setActionError(result.error); return; }
+      setActivities((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      setDeleteTarget(null);
     });
   };
 

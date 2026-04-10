@@ -97,30 +97,25 @@ export default function CampaignsClient({
     };
 
     startTransition(async () => {
-      try {
-        if (modal?.mode === "edit") {
-          const updated = await updateCampaign(modal.campaign.id, data);
-          setCampaigns((prev) => prev.map((c) => (c.id === modal.campaign.id ? (updated as Campaign) : c)));
-        } else {
-          const created = await createCampaign(data);
-          setCampaigns((prev) => [created as Campaign, ...prev]);
-        }
-        setModal(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "保存に失敗しました");
+      if (modal?.mode === "edit") {
+        const result = await updateCampaign(modal.campaign.id, data);
+        if (result.error) { setError(result.error); return; }
+        setCampaigns((prev) => prev.map((c) => (c.id === modal.campaign.id ? (result.data as unknown as Campaign) : c)));
+      } else {
+        const result = await createCampaign(data);
+        if (result.error) { setError(result.error); return; }
+        setCampaigns((prev) => [result.data as unknown as Campaign, ...prev]);
       }
+      setModal(null);
     });
   };
 
   const handleDelete = (c: Campaign) => {
     startTransition(async () => {
-      try {
-        await deleteCampaign(c.id);
-        setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
-        setDeleteTarget(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteCampaign(c.id);
+      if (result.error) { setError(result.error); return; }
+      setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
+      setDeleteTarget(null);
     });
   };
 

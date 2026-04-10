@@ -77,16 +77,15 @@ export default function MediaClient({
           continue;
         }
 
-        try {
-          await insertMediaAsset({
-            name: file.name,
-            file_path: path,
-            file_type: getFileType(file.type),
-            file_size: file.size,
-            mime_type: file.type,
-            tags: [],
-          });
-        } catch (e) {
+        const insertResult = await insertMediaAsset({
+          name: file.name,
+          file_path: path,
+          file_type: getFileType(file.type),
+          file_size: file.size,
+          mime_type: file.type,
+          tags: [],
+        });
+        if (insertResult.error) {
           errors.push(`${file.name}: メタデータ保存失敗`);
           // ストレージから削除
           await supabase.storage.from("marketing").remove([path]);
@@ -113,29 +112,23 @@ export default function MediaClient({
     setActionError(null);
     const tags = editForm.tagsInput.split(/[,、]/).map((t) => t.trim()).filter(Boolean);
     startTransition(async () => {
-      try {
-        await updateMediaAsset(editTarget.id, {
-          name: editForm.name.trim() || editTarget.name,
-          tags,
-          campaign_id: editTarget.campaign_id,
-        });
-        setEditTarget(null);
-        router.refresh();
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : "保存に失敗しました");
-      }
+      const result = await updateMediaAsset(editTarget.id, {
+        name: editForm.name.trim() || editTarget.name,
+        tags,
+        campaign_id: editTarget.campaign_id,
+      });
+      if (result.error) { setActionError(result.error); return; }
+      setEditTarget(null);
+      router.refresh();
     });
   };
 
   const handleDelete = (a: MediaAsset) => {
     startTransition(async () => {
-      try {
-        await deleteMediaAsset(a.id, a.file_path);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : "削除に失敗しました");
-      }
+      const result = await deleteMediaAsset(a.id, a.file_path);
+      if (result.error) { setActionError(result.error); return; }
+      setDeleteTarget(null);
+      router.refresh();
     });
   };
 
