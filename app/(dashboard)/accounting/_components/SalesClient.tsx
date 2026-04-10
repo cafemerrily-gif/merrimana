@@ -142,13 +142,13 @@ export default function SalesClient({
           items,
         };
 
-        let result: { error?: string };
         if (modal?.mode === "edit") {
-          result = await updateSale(modal.sale.id, data);
+          const result = await updateSale(modal.sale.id, data);
+          if (result.error) { setError(result.error); return; }
         } else {
-          result = await createSale(data);
+          const result = await createSale(data);
+          if (result.error) { setError(result.error); return; }
         }
-        if (result.error) { setError(result.error); return; }
         setModal(null);
         router.refresh();
       } catch (e) {

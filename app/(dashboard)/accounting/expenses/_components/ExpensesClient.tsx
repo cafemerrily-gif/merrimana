@@ -90,13 +90,13 @@ export default function ExpensesClient({
         vendor: form.vendor.trim(),
         amount,
       };
-      let result: { error?: string };
       if (modal?.mode === "edit") {
-        result = await updateExpense(modal.expense.id, data);
+        const result = await updateExpense(modal.expense.id, data);
+        if (result.error) { setError(result.error); return; }
       } else {
-        result = await createExpense(data);
+        const result = await createExpense(data);
+        if (result.error) { setError(result.error); return; }
       }
-      if (result.error) { setError(result.error); return; }
       setModal(null);
       router.refresh();
     });
