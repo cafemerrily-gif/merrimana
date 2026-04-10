@@ -20,10 +20,11 @@ export async function inviteUser(data: {
 }): Promise<{ error?: string }> {
   try {
     const supabase = createAdminClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-    const { data: result, error } = await supabase.auth.admin.inviteUserByEmail(data.email, {
-      redirectTo: `${siteUrl}/auth/confirm`,
-    });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const { data: result, error } = await supabase.auth.admin.inviteUserByEmail(
+      data.email,
+      siteUrl ? { redirectTo: `${siteUrl}/auth/confirm` } : {}
+    );
     if (error) return { error: error.message };
 
     const { error: profileError } = await supabase.from("profiles").upsert({
