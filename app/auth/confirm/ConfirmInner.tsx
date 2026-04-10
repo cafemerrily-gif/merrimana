@@ -53,15 +53,8 @@ export default function ConfirmInner() {
       return;
     }
 
-    // ハッシュフラグメント (#access_token=...) フロー:
-    // @supabase/ssr がページロード時に自動でセッションを設定するので getUser で確認
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        onSuccess();
-      } else {
-        onError("無効なリンクです。招待メールのリンクを再度お試しください。");
-      }
-    });
+    // code も token_hash もない場合は無効なリンク
+    onError("無効なリンクです。招待メールのリンクを再度お試しください。");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
