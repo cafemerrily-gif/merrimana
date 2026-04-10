@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, TrendingUp, Users, DollarSign, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { Modal, inputCls, FieldLabel } from "@/components/ui/modal";
 import { createSale, updateSale, deleteSale } from "@/app/actions/accounting";
-import type { Sale, MonthlySale, ProductForSale } from "@/types/accounting";
+import type { Sale, ProductForSale } from "@/types/accounting";
 
 type ItemQuantity = {
   product_id: string;
@@ -52,12 +52,10 @@ function buildQuantities(
 
 export default function SalesClient({
   sales,
-  monthlySummary,
   products,
   dbError,
 }: {
   sales: Sale[];
-  monthlySummary: MonthlySale[];
   products: ProductForSale[];
   dbError: boolean;
 }) {
@@ -178,7 +176,19 @@ export default function SalesClient({
   const totalAmount = sales.reduce((s, r) => s + r.amount, 0);
   const totalCustomers = sales.reduce((s, r) => s + r.customer_count, 0);
   const avgPerCustomer = totalCustomers > 0 ? Math.round(totalAmount / totalCustomers) : null;
-  const maxAmount = Math.max(...monthlySummary.map((m) => m.amount), 1);
+
+  // 今月の日次グラフデータ
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const today = now.getDate();
+  const dailyData = Array.from({ length: today }, (_, i) => {
+    const day = i + 1;
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const amount = sales.filter((s) => s.date === dateStr).reduce((sum, s) => sum + s.amount, 0);
+    return { day, label: `${day}`, amount };
+  });
+  const maxDailyAmount = Math.max(...dailyData.map((d) => d.amount), 1);
 
   return (
     <>
@@ -227,30 +237,35 @@ export default function SalesClient({
               ))}
             </div>
 
-            {/* 月次グラフ */}
+            {/* 日次グラフ */}
             <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
-                月次売上推移（直近6ヶ月）
+                日次売上推移（今月）
               </h2>
-              <div className="flex items-end gap-3 h-40">
-                {monthlySummary.map(({ label, amount }) => {
-                  const heightPct = (amount / maxAmount) * 100;
+              <div className="flex items-end gap-px h-40 overflow-x-auto">
+                {dailyData.map(({ day, label, amount }) => {
+                  const heightPct = (amount / maxDailyAmount) * 100;
                   return (
-                    <div key={label} className="flex flex-col items-center gap-1 flex-1">
-                      <span className="text-xs text-neutral-500 tabular-nums">
-                        {amount > 0 ? `${(amount / 10000).toFixed(0)}万` : ""}
-                      </span>
+                    <div key={day} className="flex flex-col items-center gap-1 flex-1 min-w-[20px]">
                       <div className="w-full flex items-end" style={{ height: "100px" }}>
                         <div
                           className="w-full rounded-t bg-blue-500 dark:bg-blue-600 transition-all"
-                          style={{ height: `${Math.max(heightPct, amount > 0 ? 2 : 0)}%` }}
+                          style={{ height: `${Math.max(heightPct, amount > 0 ? 3 : 0)}%` }}
+                          title={amount > 0 ? `¥${amount.toLocaleString()}` : ""}
                         />
                       </div>
-                      <span className="text-xs text-neutral-400">{label}</span>
+                      {today <= 15 || day % 5 === 0 || day === 1 ? (
+                        <span className="text-xs text-neutral-400">{label}</span>
+                      ) : (
+                        <span className="text-xs text-transparent select-none">·</span>
+                      )}
                     </div>
                   );
                 })}
               </div>
+              <p className="text-xs text-neutral-400 mt-2 text-right">
+                ※ バーにカーソルを合わせると金額を確認できます
+              </p>
             </div>
 
             {/* 日別売上テーブル */}
