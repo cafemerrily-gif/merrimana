@@ -32,8 +32,8 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 未認証ユーザーを /login へリダイレクト（公開パスは除外）
-  const publicPaths = ["/login"];
-  if (!user && !publicPaths.includes(pathname)) {
+  const publicPaths = ["/login", "/auth/confirm", "/unauthorized"];
+  if (!user && !publicPaths.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

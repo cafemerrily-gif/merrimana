@@ -1,9 +1,8 @@
 import { type NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { updateSession } from "@/utils/supabase/middleware";
 
-// 認証チェックを一時的に無効化中
-export async function proxy(_request: NextRequest) {
-  return NextResponse.next();
+export async function proxy(request: NextRequest) {
+  return updateSession(request);
 }
 
 export const config = {
