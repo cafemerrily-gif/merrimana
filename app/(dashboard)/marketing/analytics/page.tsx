@@ -94,11 +94,10 @@ export default async function AnalyticsPage() {
   }
 
   // ── 月別集計 ──
-  const salesByMonth = new Map<string, { customers: number; amount: number }>();
+  const salesByMonth = new Map<string, number>();
   salesData.forEach((s) => {
     const key = s.date.slice(0, 7);
-    const p = salesByMonth.get(key) ?? { customers: 0, amount: 0 };
-    salesByMonth.set(key, { customers: p.customers + (s.customer_count ?? 0), amount: p.amount + s.amount });
+    salesByMonth.set(key, (salesByMonth.get(key) ?? 0) + s.amount);
   });
   const prByMonth = new Map<string, number>();
   prData.forEach((p) => {
@@ -109,13 +108,12 @@ export default async function AnalyticsPage() {
   });
   const monthlyStats = sixMonths.map((m) => ({
     label: m.label, key: m.key,
-    customers: salesByMonth.get(m.key)?.customers ?? 0,
-    amount: salesByMonth.get(m.key)?.amount ?? 0,
+    amount: salesByMonth.get(m.key) ?? 0,
     prCount: prByMonth.get(m.key) ?? 0,
   }));
 
   // ── KPI ──
-  const totalCustomers = monthlyStats.reduce((s, m) => s + m.customers, 0);
+  const totalAmount = monthlyStats.reduce((s, m) => s + m.amount, 0);
   const totalPr = prData.length;
   const completedPr = prData.filter((p) => p.status === "完了").length;
   const activeCampaignCount = campaigns.filter((c) => c.status === "実施中").length;
@@ -146,8 +144,8 @@ export default async function AnalyticsPage() {
   type CampaignEffect = {
     id: string; title: string; start_date: string; end_date: string; status: string;
     prCount: number; prChannels: string[];
-    duringCustomers: number; duringDays: number; avgDuring: number;
-    beforeCustomers: number; beforeDays: number; avgBefore: number;
+    duringAmount: number; duringDays: number; avgDuring: number;
+    beforeAmount: number; avgBefore: number;
     changePercent: number | null;
   };
   const campaignEffects: CampaignEffect[] = [];
@@ -159,53 +157,48 @@ export default async function AnalyticsPage() {
     const start = c.start_date;
     const end = c.end_date <= todayStr ? c.end_date : todayStr;
 
-    let duringCustomers = 0;
-    salesData.forEach((s) => { if (s.date >= start && s.date <= end) duringCustomers += s.customer_count ?? 0; });
+    let duringAmount = 0;
+    salesData.forEach((s) => { if (s.date >= start && s.date <= end) duringAmount += s.amount; });
     const duringDays = Math.max(diffDays(start, end), 1);
-    const avgDuring = duringCustomers / duringDays;
+    const avgDuring = duringAmount / duringDays;
 
     // キャンペーン開始30日前
     const before30 = new Date(c.start_date);
     before30.setDate(before30.getDate() - 30);
     const before30Str = before30.toISOString().slice(0, 10);
-    let beforeCustomers = 0;
-    let beforeDataDays = 0;
+    let beforeAmount = 0;
     salesData.forEach((s) => {
-      if (s.date >= before30Str && s.date < c.start_date!) {
-        beforeCustomers += s.customer_count ?? 0;
-        beforeDataDays++;
-      }
+      if (s.date >= before30Str && s.date < c.start_date!) beforeAmount += s.amount;
     });
-    const beforeDays = 30;
-    const avgBefore = beforeCustomers > 0 ? beforeCustomers / beforeDays : 0;
+    const avgBefore = beforeAmount > 0 ? beforeAmount / 30 : 0;
     const changePercent = avgBefore > 0 ? Math.round(((avgDuring - avgBefore) / avgBefore) * 100) : null;
 
     campaignEffects.push({
       id: c.id, title: c.title, start_date: c.start_date, end_date: c.end_date, status: c.status,
       prCount: campaignPr.length, prChannels,
-      duringCustomers, duringDays, avgDuring: Math.round(avgDuring * 10) / 10,
-      beforeCustomers, beforeDays, avgBefore: Math.round(avgBefore * 10) / 10,
+      duringAmount, duringDays, avgDuring: Math.round(avgDuring),
+      beforeAmount, avgBefore: Math.round(avgBefore),
       changePercent,
     });
   }
 
-  // ── 商品販売期間 × 来客数 ──
+  // ── 商品販売期間 × 売上 ──
   type ProductSaleStat = {
     name: string; sale_start: string | null; sale_end: string | null;
-    customers: number; amount: number; salesDays: number; status: string;
+    amount: number; salesDays: number; status: string;
   };
   const productSaleStats: ProductSaleStat[] = productsWithPeriod.map((p) => {
     const start = p.sale_start ?? null;
     const end = p.sale_end ?? null;
-    let customers = 0, amount = 0, salesDays = 0;
+    let amount = 0, salesDays = 0;
     salesData.forEach((s) => {
       const inRange = (!start || s.date >= start) && (!end || s.date <= end);
-      if (inRange) { customers += s.customer_count ?? 0; amount += s.amount; salesDays++; }
+      if (inRange) { amount += s.amount; salesDays++; }
     });
-    return { name: p.name, sale_start: start, sale_end: end, customers, amount, salesDays, status: p.status };
-  }).sort((a, b) => b.customers - a.customers);
+    return { name: p.name, sale_start: start, sale_end: end, amount, salesDays, status: p.status };
+  }).sort((a, b) => b.amount - a.amount);
 
-  const maxBar = Math.max(...monthlyStats.map((m) => m.customers), 1);
+  const maxBar = Math.max(...monthlyStats.map((m) => m.amount), 1);
 
   const statusColors: Record<string, string> = {
     予定: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
@@ -222,7 +215,7 @@ export default async function AnalyticsPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard label="直近6ヶ月 累計来客" value={`${totalCustomers.toLocaleString()}人`} />
+        <KpiCard label="直近6ヶ月 累計売上" value={`¥${totalAmount.toLocaleString()}`} />
         <KpiCard label="PR活動 合計" value={`${totalPr}件`} sub={`完了 ${completedPr}件`} />
         <KpiCard
           label="完了率"
@@ -231,17 +224,17 @@ export default async function AnalyticsPage() {
         <KpiCard label="実施中キャンペーン" value={`${activeCampaignCount}件`} />
       </div>
 
-      {/* 月別来客数グラフ */}
+      {/* 月別売上グラフ */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-        <SectionTitle>月別来客数（直近6ヶ月）</SectionTitle>
-        {monthlyStats.every((m) => m.customers === 0) ? (
+        <SectionTitle>月別売上（直近6ヶ月）</SectionTitle>
+        {monthlyStats.every((m) => m.amount === 0) ? (
           <p className="text-sm text-neutral-400 text-center py-8">
-            売上管理で来客数を入力するとグラフが表示されます。
+            売上管理でデータを入力するとグラフが表示されます。
           </p>
         ) : (
           <>
             <div className="flex items-end gap-3 h-36">
-              {monthlyStats.map(({ label, customers, prCount }) => (
+              {monthlyStats.map(({ label, amount, prCount }) => (
                 <div key={label} className="flex-1 flex flex-col items-center gap-1">
                   {prCount > 0 && (
                     <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
@@ -250,11 +243,13 @@ export default async function AnalyticsPage() {
                   )}
                   <div
                     className="w-full rounded-t bg-blue-500 dark:bg-blue-600 transition-all min-h-[2px]"
-                    style={{ height: `${Math.max((customers / maxBar) * 112, customers > 0 ? 4 : 0)}px` }}
-                    title={`${label}: ${customers}人`}
+                    style={{ height: `${Math.max((amount / maxBar) * 112, amount > 0 ? 4 : 0)}px` }}
+                    title={`${label}: ¥${amount.toLocaleString()}`}
                   />
                   <span className="text-xs text-neutral-400">{label}</span>
-                  <span className="text-xs tabular-nums text-neutral-500">{customers > 0 ? customers : "—"}</span>
+                  <span className="text-xs tabular-nums text-neutral-500">
+                    {amount > 0 ? `¥${(amount / 10000).toFixed(1)}万` : "—"}
+                  </span>
                 </div>
               ))}
             </div>
@@ -270,7 +265,7 @@ export default async function AnalyticsPage() {
         <SectionTitle>キャンペーン効果分析</SectionTitle>
         {campaignEffects.length === 0 ? (
           <p className="text-sm text-neutral-400 text-center py-6">
-            開始日・終了日が設定されたキャンペーンがあると、来客数の変化を分析できます。
+            開始日・終了日が設定されたキャンペーンがあると、売上の変化を分析できます。
           </p>
         ) : (
           <div className="space-y-4">
@@ -309,18 +304,18 @@ export default async function AnalyticsPage() {
 
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   <div className="text-center">
-                    <p className="text-xs text-neutral-400">期間前 日均来客</p>
+                    <p className="text-xs text-neutral-400">期間前 日均売上</p>
                     <p className="text-base font-bold tabular-nums text-neutral-700 dark:text-neutral-300">
-                      {ce.avgBefore > 0 ? `${ce.avgBefore}人` : "データなし"}
+                      {ce.avgBefore > 0 ? `¥${ce.avgBefore.toLocaleString()}` : "データなし"}
                     </p>
                     <p className="text-xs text-neutral-400">（30日前比）</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-neutral-400">期間中 日均来客</p>
+                    <p className="text-xs text-neutral-400">期間中 日均売上</p>
                     <p className="text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">
-                      {ce.duringCustomers > 0 ? `${ce.avgDuring}人` : "データなし"}
+                      {ce.duringAmount > 0 ? `¥${ce.avgDuring.toLocaleString()}` : "データなし"}
                     </p>
-                    <p className="text-xs text-neutral-400">（累計 {ce.duringCustomers}人）</p>
+                    <p className="text-xs text-neutral-400">（累計 ¥{ce.duringAmount.toLocaleString()}）</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-neutral-400">PR活動数</p>
@@ -335,7 +330,7 @@ export default async function AnalyticsPage() {
 
                 {ce.changePercent === null && (
                   <p className="text-xs text-neutral-400 italic">
-                    ※ 売上データが不足しているため変化率を計算できません。
+                    ※ 売上データが不足しているため変化率を計算できません（開始30日前のデータが必要です）。
                   </p>
                 )}
               </div>
@@ -394,12 +389,12 @@ export default async function AnalyticsPage() {
         )}
       </div>
 
-      {/* 商品販売期間 × 来客数 */}
+      {/* 商品販売期間 × 売上 */}
       {productSaleStats.length > 0 && (
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-          <SectionTitle>商品販売期間 × 来客数</SectionTitle>
+          <SectionTitle>商品販売期間 × 売上</SectionTitle>
           <p className="text-xs text-neutral-400 mb-4">
-            販売期間が設定された商品の期間中、店舗の来客数・売上合計を表示します。
+            販売期間が設定された商品の期間中、店舗全体の売上合計を表示します。
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -407,8 +402,8 @@ export default async function AnalyticsPage() {
                 <tr className="border-b border-neutral-100 dark:border-neutral-800">
                   <th className="text-left text-xs text-neutral-400 font-medium pb-2">商品名</th>
                   <th className="text-left text-xs text-neutral-400 font-medium pb-2">販売期間</th>
-                  <th className="text-right text-xs text-neutral-400 font-medium pb-2">期間中 来客数</th>
-                  <th className="text-right text-xs text-neutral-400 font-medium pb-2">期間中 売上</th>
+                  <th className="text-right text-xs text-neutral-400 font-medium pb-2">期間中 売上合計</th>
+                  <th className="text-right text-xs text-neutral-400 font-medium pb-2">日均売上</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -426,10 +421,12 @@ export default async function AnalyticsPage() {
                       {ps.sale_start ?? "〜"} 〜 {ps.sale_end ?? "現在"}
                     </td>
                     <td className="py-2.5 pr-3 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
-                      {ps.customers > 0 ? `${ps.customers.toLocaleString()}人` : "—"}
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
                       {ps.amount > 0 ? `¥${ps.amount.toLocaleString()}` : "—"}
+                    </td>
+                    <td className="py-2.5 text-right tabular-nums text-neutral-500">
+                      {ps.salesDays > 0 && ps.amount > 0
+                        ? `¥${Math.round(ps.amount / ps.salesDays).toLocaleString()}`
+                        : "—"}
                     </td>
                   </tr>
                 ))}
@@ -437,14 +434,14 @@ export default async function AnalyticsPage() {
             </table>
           </div>
           <p className="text-xs text-neutral-400 mt-3">
-            ※ 来客数・売上は店舗全体の数値です。特定商品の個別販売数は「会計 → 売上管理」の明細から確認できます。
+            ※ 売上は店舗全体の数値です。商品別の販売数は「会計 → 売上管理」の明細から確認できます。
           </p>
         </div>
       )}
 
       <p className="text-xs text-neutral-400">
-        来客数は「売上管理」、PR活動は「PR活動」の登録内容から集計されます。
-        キャンペーン効果の変化率は開始30日前との日平均来客数比較です。
+        売上データは「売上管理」、PR活動は「PR活動」の登録内容から集計されます。
+        キャンペーン効果の変化率は開始30日前との日平均売上比較です。
       </p>
     </div>
   );
