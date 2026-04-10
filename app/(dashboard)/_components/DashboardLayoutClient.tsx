@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import {
   Home,
   BarChart2,
@@ -13,6 +14,7 @@ import {
   Store,
   Sun,
   Moon,
+  LogOut,
   TrendingUp,
   Receipt,
   PieChart,
@@ -108,13 +110,73 @@ function ThemeToggle() {
   );
 }
 
+function UserMenu({ name, email }: { name: string; email: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  const initial = name ? name[0] : email[0]?.toUpperCase() ?? "?";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 px-2 py-1 transition-colors"
+        aria-label="設定"
+      >
+        <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center select-none">
+          {initial}
+        </span>
+        <span className="hidden xl:block text-sm text-neutral-700 dark:text-neutral-300 max-w-28 truncate">
+          {name || email}
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-lg z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+            {name && (
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{name}</p>
+            )}
+            <p className="text-xs text-neutral-400 truncate">{email}</p>
+          </div>
+          <div className="p-1">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            >
+              <LogOut size={14} />
+              ログアウト
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardLayoutClient({
   children,
   permissions,
+  currentUser,
 }: {
   children: React.ReactNode;
-  /** null = 権限テーブル未設定（全表示）、string[] = 許可された権限リスト */
   permissions: string[] | null;
+  currentUser: { name: string; email: string } | null;
 }) {
   const { setTheme } = useTheme();
   const pathname = usePathname();
@@ -216,7 +278,10 @@ export default function DashboardLayoutClient({
             <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
               メリリーカフェ 管理システム
             </span>
-            {mounted && isLg && <ThemeToggle />}
+            <div className="flex items-center gap-2">
+              {mounted && isLg && <ThemeToggle />}
+              {currentUser && <UserMenu name={currentUser.name} email={currentUser.email} />}
+            </div>
           </header>
 
           {/* モバイル：セクションのサブナビ（横スクロール） */}
