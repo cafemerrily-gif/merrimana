@@ -20,23 +20,46 @@ export default function ConfirmInner() {
   useEffect(() => {
     const tokenHash = searchParams.get("token_hash");
     const type = searchParams.get("type") as "invite" | "recovery" | null;
+    const code = searchParams.get("code");
 
-    if (!tokenHash || !type) {
-      setErrorMsg("無効なリンクです。招待メールのリンクを再度お試しください。");
+    const onSuccess = () => setStep("set-password");
+    const onError = (msg: string) => {
+      setErrorMsg(msg);
       setStep("error");
+    };
+
+    if (code) {
+      // PKCE フロー: code をセッションと交換
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) onError(`認証エラー: ${error.message}`);
+        else onSuccess();
+      });
       return;
     }
 
-    supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error }) => {
-      if (error) {
-        setErrorMsg(
-          error.message.includes("expired")
-            ? "リンクの有効期限が切れています。管理者に再招待を依頼してください。"
-            : `認証エラー: ${error.message}`
-        );
-        setStep("error");
+    if (tokenHash && type) {
+      // OTP / invite フロー
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error }) => {
+        if (error) {
+          onError(
+            error.message.includes("expired")
+              ? "リンクの有効期限が切れています。管理者に再招待を依頼してください。"
+              : `認証エラー: ${error.message}`
+          );
+        } else {
+          onSuccess();
+        }
+      });
+      return;
+    }
+
+    // ハッシュフラグメント (#access_token=...) フロー:
+    // @supabase/ssr がページロード時に自動でセッションを設定するので getUser で確認
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        onSuccess();
       } else {
-        setStep("set-password");
+        onError("無効なリンクです。招待メールのリンクを再度お試しください。");
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

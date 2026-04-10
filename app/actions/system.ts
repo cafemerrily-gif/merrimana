@@ -19,7 +19,10 @@ export async function inviteUser(data: {
   role: string;
 }) {
   const supabase = createAdminClient();
-  const { data: result, error } = await supabase.auth.admin.inviteUserByEmail(data.email);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { data: result, error } = await supabase.auth.admin.inviteUserByEmail(data.email, {
+    redirectTo: `${siteUrl}/auth/confirm`,
+  });
   if (error) throw new Error(error.message);
 
   // プロフィール行を即時作成
