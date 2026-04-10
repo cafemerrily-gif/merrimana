@@ -24,8 +24,41 @@ function formatDate(iso: string | null) {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-type InviteForm = { email: string; name: string; unit: string; role: string };
-type EditForm   = { name: string; unit: string; role: string };
+function UnitCheckboxes({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (units: string[]) => void;
+}) {
+  const toggle = (unit: string) => {
+    onChange(
+      selected.includes(unit)
+        ? selected.filter((u) => u !== unit)
+        : [...selected, unit]
+    );
+  };
+  return (
+    <div className="grid grid-cols-1 gap-1.5">
+      {UNITS.map((unit) => (
+        <label key={unit} className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={selected.includes(unit)}
+            onChange={() => toggle(unit)}
+            className="w-4 h-4 rounded accent-blue-600"
+          />
+          <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", unitColors[unit])}>
+            {unit}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+type InviteForm = { email: string; name: string; units: string[]; role: string };
+type EditForm   = { name: string; units: string[]; role: string };
 
 export default function UsersClient({
   users: initialUsers,
@@ -39,31 +72,30 @@ export default function UsersClient({
   const [inviteModal, setInviteModal] = useState(false);
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
-  const [inviteForm, setInviteForm] = useState<InviteForm>({ email: "", name: "", unit: "店舗スタッフ", role: "スタッフ" });
-  const [editForm, setEditForm]     = useState<EditForm>({ name: "", unit: "", role: "" });
+  const [inviteForm, setInviteForm] = useState<InviteForm>({ email: "", name: "", units: ["店舗スタッフ"], role: "スタッフ" });
+  const [editForm, setEditForm]     = useState<EditForm>({ name: "", units: [], role: "" });
   const [error, setError] = useState<string | null>(null);
 
   const openInvite = () => {
-    setInviteForm({ email: "", name: "", unit: "店舗スタッフ", role: "スタッフ" });
+    setInviteForm({ email: "", name: "", units: ["店舗スタッフ"], role: "スタッフ" });
     setError(null);
     setInviteModal(true);
   };
 
   const openEdit = (u: UserRow) => {
-    setEditForm({ name: u.name, unit: u.unit, role: u.role });
+    setEditForm({ name: u.name, units: u.units, role: u.role });
     setError(null);
     setEditTarget(u);
   };
 
   const handleInvite = () => {
     if (!inviteForm.email.trim()) { setError("メールアドレスを入力してください。"); return; }
+    if (inviteForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
       try {
         await inviteUser(inviteForm);
-        // 仮ユーザーとしてリストに追加（IDは招待後に確定するためサーバーリロードが必要）
         setInviteModal(false);
-        // 招待は非同期でメール送信されるため、ページリロードで反映
         window.location.reload();
       } catch (e) {
         setError(e instanceof Error ? e.message : "招待に失敗しました");
@@ -74,6 +106,7 @@ export default function UsersClient({
   const handleEditSave = () => {
     if (!editTarget) return;
     if (!editForm.name.trim()) { setError("氏名を入力してください。"); return; }
+    if (editForm.units.length === 0) { setError("ユニットを1つ以上選択してください。"); return; }
     setError(null);
     startTransition(async () => {
       try {
@@ -101,8 +134,8 @@ export default function UsersClient({
     });
   };
 
-  const active   = users.filter((u) => u.confirmed);
-  const pending  = users.filter((u) => !u.confirmed);
+  const active  = users.filter((u) => u.confirmed);
+  const pending = users.filter((u) => !u.confirmed);
 
   return (
     <>
@@ -127,7 +160,6 @@ export default function UsersClient({
           </div>
         ) : (
           <>
-            {/* サマリー */}
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: "総ユーザー数", value: users.length },
@@ -141,7 +173,6 @@ export default function UsersClient({
               ))}
             </div>
 
-            {/* ユーザーテーブル */}
             {users.length === 0 ? (
               <div className="py-16 text-center text-sm text-neutral-400 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-700">
                 ユーザーがいません。「ユーザーを招待」からメンバーを追加してください。
@@ -169,9 +200,13 @@ export default function UsersClient({
                           <p className="text-xs text-neutral-400">{u.email}</p>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", unitColors[u.unit] ?? "bg-neutral-100 text-neutral-500")}>
-                            {u.unit}
-                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {u.units.map((unit) => (
+                              <span key={unit} className={cn("text-xs font-medium px-2 py-0.5 rounded-full", unitColors[unit] ?? "bg-neutral-100 text-neutral-500")}>
+                                {unit}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400 text-sm">{u.role}</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
@@ -240,13 +275,18 @@ export default function UsersClient({
             />
           </FieldLabel>
           <div className="grid grid-cols-2 gap-3">
-            <FieldLabel label="所属ユニット">
-              <select value={inviteForm.unit} onChange={(e) => setInviteForm({ ...inviteForm, unit: e.target.value })} className={inputCls()}>
-                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
+            <FieldLabel label="所属ユニット *">
+              <UnitCheckboxes
+                selected={inviteForm.units}
+                onChange={(units) => setInviteForm({ ...inviteForm, units })}
+              />
             </FieldLabel>
             <FieldLabel label="役割">
-              <select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })} className={inputCls()}>
+              <select
+                value={inviteForm.role}
+                onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                className={inputCls()}
+              >
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </FieldLabel>
@@ -280,13 +320,18 @@ export default function UsersClient({
             />
           </FieldLabel>
           <div className="grid grid-cols-2 gap-3">
-            <FieldLabel label="所属ユニット">
-              <select value={editForm.unit} onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} className={inputCls()}>
-                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
+            <FieldLabel label="所属ユニット *">
+              <UnitCheckboxes
+                selected={editForm.units}
+                onChange={(units) => setEditForm({ ...editForm, units })}
+              />
             </FieldLabel>
             <FieldLabel label="役割">
-              <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} className={inputCls()}>
+              <select
+                value={editForm.role}
+                onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                className={inputCls()}
+              >
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </FieldLabel>

@@ -15,7 +15,7 @@ const REVALIDATE = () => {
 export async function inviteUser(data: {
   email: string;
   name: string;
-  unit: string;
+  units: string[];
   role: string;
 }) {
   const supabase = createAdminClient();
@@ -26,7 +26,7 @@ export async function inviteUser(data: {
   const { error: profileError } = await supabase.from("profiles").upsert({
     id: result.user.id,
     name: data.name,
-    unit: data.unit,
+    units: data.units,
     role: data.role,
   });
   if (profileError) throw new Error(profileError.message);
@@ -40,7 +40,7 @@ export async function inviteUser(data: {
 
 export async function updateProfile(
   userId: string,
-  data: { name: string; unit: string; role: string }
+  data: { name: string; units: string[]; role: string }
 ) {
   const supabase = createAdminClient();
   const { error } = await supabase

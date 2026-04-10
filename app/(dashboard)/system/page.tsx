@@ -6,7 +6,7 @@ export type UserRow = {
   id: string;
   email: string;
   name: string;
-  unit: string;
+  units: string[];
   role: string;
   lastSignIn: string | null;
   createdAt: string;
@@ -22,7 +22,7 @@ export default async function SystemPage() {
     const supabase = createAdminClient();
     const [{ data: authData }, { data: profiles }] = await Promise.all([
       supabase.auth.admin.listUsers(),
-      supabase.from("profiles").select("id, name, unit, role"),
+      supabase.from("profiles").select("id, name, units, role"),
     ]);
 
     const profileMap = new Map(
@@ -35,7 +35,7 @@ export default async function SystemPage() {
         id: u.id,
         email: u.email ?? "",
         name: profile?.name ?? u.user_metadata?.name ?? "",
-        unit: profile?.unit ?? "店舗スタッフ",
+        units: profile?.units ?? ["店舗スタッフ"],
         role: profile?.role ?? "スタッフ",
         lastSignIn: u.last_sign_in_at ?? null,
         createdAt: u.created_at,

@@ -15,7 +15,7 @@ export async function getMyPermissions(): Promise<string[] | null> {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("unit, role")
+      .select("units, role")
       .eq("id", user.id)
       .single();
 
@@ -24,14 +24,18 @@ export async function getMyPermissions(): Promise<string[] | null> {
     // 管理者ロールはユニットに関係なく全権限を持つ
     if (profile.role === "管理者") return null;
 
+    const units: string[] = Array.isArray(profile.units) ? profile.units : [profile.units];
+    if (units.length === 0) return null;
+
     const { data: perms, error } = await supabase
       .from("unit_permissions")
       .select("permission_id")
-      .eq("unit", profile.unit);
+      .in("unit", units);
 
     if (error || !perms || perms.length === 0) return null; // テーブル未作成またはデータなし → 全許可
 
-    return perms.map((p) => p.permission_id);
+    // 重複を除いて返す
+    return [...new Set(perms.map((p) => p.permission_id))];
   } catch {
     return null; // エラー時は全許可（安全側フォールバック）
   }
