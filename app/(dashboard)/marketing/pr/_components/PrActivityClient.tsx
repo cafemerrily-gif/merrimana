@@ -43,12 +43,16 @@ const defaultForm = (): FormState => ({
 export default function PrActivityClient({
   activities,
   campaigns,
+  usedChannels,
   dbError,
 }: {
   activities: PrActivity[];
   campaigns: { id: string; title: string }[];
+  usedChannels: string[];
   dbError: boolean;
 }) {
+  // 定義済みチャネル + DB内カスタムチャネルをマージ
+  const allChannelSuggestions = Array.from(new Set([...PR_CHANNELS, ...usedChannels]));
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [statusFilter, setStatusFilter] = useState<PrActivityStatus | "すべて">("すべて");
@@ -275,15 +279,19 @@ export default function PrActivityClient({
           </FieldLabel>
           <div className="grid grid-cols-2 gap-3">
             <FieldLabel label="チャネル">
-              <select
+              <input
+                type="text"
+                list="pr-channel-suggestions"
                 value={form.channel}
                 onChange={(e) => setForm({ ...form, channel: e.target.value })}
+                placeholder="例: Instagram"
                 className={inputCls()}
-              >
-                {PR_CHANNELS.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+              />
+              <datalist id="pr-channel-suggestions">
+                {allChannelSuggestions.map((c) => (
+                  <option key={c} value={c} />
                 ))}
-              </select>
+              </datalist>
             </FieldLabel>
             <FieldLabel label="ステータス">
               <select

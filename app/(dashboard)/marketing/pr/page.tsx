@@ -26,5 +26,8 @@ export default async function PrActivityPage() {
     dbError = true;
   }
 
-  return <PrActivityClient activities={activities} campaigns={campaigns} dbError={dbError} />;
+  // DB内で使用済みのチャネル名を収集（カスタムチャネル対応）
+  const usedChannels = Array.from(new Set(activities.map((a) => a.channel)));
+
+  return <PrActivityClient activities={activities} campaigns={campaigns} usedChannels={usedChannels} dbError={dbError} />;
 }
