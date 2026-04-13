@@ -2,6 +2,9 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { canDo } from "@/utils/permissions";
+
+const ERR_PERM = { error: "権限がありません" } as const;
 
 function revalidateMarketing() {
   ["/marketing", "/marketing/pr", "/marketing/analytics", "/marketing/media"].forEach((p) =>
@@ -21,6 +24,7 @@ export async function createCampaign(data: {
   status: string;
   tags: string[];
 }): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: row, error } = await supabase.from("campaigns").insert(data).select().single();
@@ -43,6 +47,7 @@ export async function updateCampaign(
     tags: string[];
   }
 ): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: row, error } = await supabase.from("campaigns").update(data).eq("id", id).select().single();
@@ -55,6 +60,7 @@ export async function updateCampaign(
 }
 
 export async function deleteCampaign(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("campaigns").delete().eq("id", id);
@@ -78,6 +84,7 @@ export async function createPrActivity(data: {
   status: string;
   campaign_id: string | null;
 }): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: row, error } = await supabase.from("pr_activities").insert(data).select().single();
@@ -101,6 +108,7 @@ export async function updatePrActivity(
     campaign_id: string | null;
   }
 ): Promise<{ data?: Record<string, unknown>; error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: row, error } = await supabase.from("pr_activities").update(data).eq("id", id).select().single();
@@ -114,6 +122,7 @@ export async function updatePrActivity(
 }
 
 export async function deletePrActivity(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("pr_activities").delete().eq("id", id);
@@ -138,6 +147,7 @@ export async function insertMediaAsset(data: {
   mime_type: string;
   tags: string[];
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("media_assets").insert(data);
@@ -153,6 +163,7 @@ export async function updateMediaAsset(
   id: string,
   data: { name: string; tags: string[]; campaign_id: string | null }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("media_assets").update(data).eq("id", id);
@@ -165,6 +176,7 @@ export async function updateMediaAsset(
 }
 
 export async function deleteMediaAsset(id: string, filePath: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_marketing")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     await supabase.storage.from("marketing").remove([filePath]);

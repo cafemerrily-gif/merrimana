@@ -2,6 +2,9 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { canDo } from "@/utils/permissions";
+
+const ERR_PERM = { error: "権限がありません" } as const;
 
 const REVALIDATE = () => {
   revalidatePath("/system");
@@ -18,6 +21,7 @@ export async function inviteUser(data: {
   units: string[];
   role: string;
 }): Promise<{ error?: string }> {
+  if (!await canDo("manage_users")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -50,6 +54,7 @@ export async function updateProfile(
   userId: string,
   data: { name: string; units: string[]; role: string }
 ): Promise<{ error?: string }> {
+  if (!await canDo("manage_users")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("profiles").upsert({ id: userId, ...data });
@@ -66,6 +71,7 @@ export async function updateProfile(
 // ----------------------------------------------------------------
 
 export async function deleteUser(userId: string): Promise<{ error?: string }> {
+  if (!await canDo("manage_users")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.auth.admin.deleteUser(userId);
@@ -82,6 +88,7 @@ export async function deleteUser(userId: string): Promise<{ error?: string }> {
 // ----------------------------------------------------------------
 
 export async function saveSettings(entries: { key: string; value: string }[]): Promise<{ error?: string }> {
+  if (!await canDo("manage_master")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("settings").upsert(

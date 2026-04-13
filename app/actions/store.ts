@@ -2,10 +2,14 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { canDo } from "@/utils/permissions";
+
+const ERR_PERM = { error: "権限がありません" } as const;
 
 // ── Timecard ──────────────────────────────────────────────────────────────────
 
 export async function clockIn(staffName: string, date: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: existing } = await supabase
@@ -37,6 +41,7 @@ export async function clockIn(staffName: string, date: string): Promise<{ error?
 }
 
 export async function clockOut(timecardId: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase
@@ -60,6 +65,7 @@ export async function upsertTimecard(data: {
   break_minutes: number;
   notes: string;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { id, ...rest } = data;
@@ -78,6 +84,7 @@ export async function upsertTimecard(data: {
 }
 
 export async function deleteTimecard(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("timecards").delete().eq("id", id);
@@ -100,6 +107,7 @@ export async function upsertInventoryItem(data: {
   max_quantity: number;
   current_quantity: number;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { id, ...rest } = data;
@@ -124,6 +132,7 @@ export async function updateInventoryQuantity(
   id: string,
   quantity: number
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase
@@ -139,6 +148,7 @@ export async function updateInventoryQuantity(
 }
 
 export async function deleteInventoryItem(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("inventory_items").delete().eq("id", id);
@@ -157,6 +167,7 @@ export async function submitDailyReport(data: {
   content: string;
   submitted_by: string;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("daily_reports").upsert(
@@ -182,6 +193,7 @@ export async function upsertWeeklyShift(data: {
   end_time: string;
   notes: string;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { id, ...rest } = data;
@@ -200,6 +212,7 @@ export async function upsertWeeklyShift(data: {
 }
 
 export async function deleteWeeklyShift(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_store")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("weekly_shifts").delete().eq("id", id);
