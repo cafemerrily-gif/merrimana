@@ -41,14 +41,14 @@ export async function createTrial(data: TrialInput): Promise<{ id?: string; erro
     if (ingredients.length > 0) {
       const { error: e } = await supabase
         .from("product_trial_ingredients")
-        .insert(ingredients.map((i, idx) => ({ ...i, id: undefined, trial_id: trial.id, sort_order: idx })));
+        .insert(ingredients.map(({ id: _id, ...i }, idx) => ({ ...i, trial_id: trial.id, sort_order: idx })));
       if (e) return { error: e.message };
     }
 
     if (purchases.length > 0) {
       const { error: e } = await supabase
         .from("product_trial_purchases")
-        .insert(purchases.map((p, idx) => ({ ...p, id: undefined, trial_id: trial.id, sort_order: idx })));
+        .insert(purchases.map(({ id: _id, ...p }, idx) => ({ ...p, trial_id: trial.id, sort_order: idx })));
       if (e) return { error: e.message };
     }
 
@@ -77,14 +77,14 @@ export async function updateTrial(id: string, data: TrialInput): Promise<{ error
     if (ingredients.length > 0) {
       const { error: e } = await supabase
         .from("product_trial_ingredients")
-        .insert(ingredients.map((i, idx) => ({ ...i, id: undefined, trial_id: id, sort_order: idx })));
+        .insert(ingredients.map(({ id: _id, ...i }, idx) => ({ ...i, trial_id: id, sort_order: idx })));
       if (e) return { error: e.message };
     }
 
     if (purchases.length > 0) {
       const { error: e } = await supabase
         .from("product_trial_purchases")
-        .insert(purchases.map((p, idx) => ({ ...p, id: undefined, trial_id: id, sort_order: idx })));
+        .insert(purchases.map(({ id: _id, ...p }, idx) => ({ ...p, trial_id: id, sort_order: idx })));
       if (e) return { error: e.message };
     }
 
