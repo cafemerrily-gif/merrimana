@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import { getCurrentPeriod, getPeriodKey } from "./shift/_lib/periods";
 import DailyReportForm from "./_components/DailyReportForm";
 import DateNav from "./_components/DateNav";
@@ -42,6 +43,7 @@ export default async function StorePage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
+  await requirePermission("view_store");
   const { date: dateParam } = await searchParams;
   const todayStr = getJstDateStr();
 

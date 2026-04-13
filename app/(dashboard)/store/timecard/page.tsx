@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import TimecardClient from "./_components/TimecardClient";
 
 function getDateStr(d: Date) {
@@ -20,6 +21,7 @@ export default async function TimecardPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
+  await requirePermission("view_store");
   const { month: monthParam } = await searchParams;
   const today = new Date();
   const todayStr = getDateStr(today);

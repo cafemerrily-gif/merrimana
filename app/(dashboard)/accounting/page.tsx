@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import SalesClient from "./_components/SalesClient";
 import type { Sale, ProductForSale } from "@/types/accounting";
 import type { SettingsMap } from "../system/master/page";
@@ -12,6 +13,7 @@ function getMonthRange(year: number, month: number) {
 }
 
 export default async function AccountingPage() {
+  await requirePermission("view_accounting");
   let sales: Sale[] = [];
   let products: ProductForSale[] = [];
   let settings: SettingsMap = {};

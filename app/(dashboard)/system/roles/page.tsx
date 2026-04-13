@@ -1,9 +1,9 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import { requirePermission } from "@/utils/permissions";
+import { requireAdminRole } from "@/utils/permissions";
 import RolesClient from "./_components/RolesClient";
 
 export default async function RolesPage() {
-  await requirePermission("manage_users");
+  await requireAdminRole();
 
   let matrix: Record<string, string[]> = {};
   let dbError = false;

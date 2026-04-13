@@ -2,6 +2,9 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { canDo } from "@/utils/permissions";
+
+const ERR_PERM = { error: "権限がありません" } as const;
 
 const REVALIDATE_PATHS = ["/accounting", "/accounting/expenses", "/accounting/pl", "/accounting/budget"];
 
@@ -30,6 +33,7 @@ export async function createSale(data: {
   notes: string;
   items: SaleItemInput[];
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: sale, error } = await supabase
@@ -65,6 +69,7 @@ export async function updateSale(
     items: SaleItemInput[];
   }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase
@@ -89,6 +94,7 @@ export async function updateSale(
 }
 
 export async function deleteSale(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("sales").delete().eq("id", id);
@@ -111,6 +117,7 @@ export async function createExpense(data: {
   vendor: string;
   amount: number;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("expenses").insert(data);
@@ -126,6 +133,7 @@ export async function updateExpense(
   id: string,
   data: { date: string; category: string; description: string; vendor: string; amount: number }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("expenses").update(data).eq("id", id);
@@ -138,6 +146,7 @@ export async function updateExpense(
 }
 
 export async function deleteExpense(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("expenses").delete().eq("id", id);
@@ -159,6 +168,7 @@ export async function upsertBudget(data: {
   category: string;
   amount: number;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_accounting")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase

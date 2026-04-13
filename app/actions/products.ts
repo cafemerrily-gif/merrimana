@@ -2,6 +2,9 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { canDo } from "@/utils/permissions";
+
+const ERR_PERM = { error: "権限がありません" } as const;
 
 const REVALIDATE_PRODUCTS = () => {
   revalidatePath("/products");
@@ -21,6 +24,7 @@ export async function createProduct(data: {
   sale_start: string | null;
   sale_end: string | null;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("products").insert(data);
@@ -43,6 +47,7 @@ export async function updateProduct(
     sale_end: string | null;
   }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("products").update(data).eq("id", id);
@@ -55,6 +60,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
 
@@ -87,6 +93,7 @@ export async function createCategory(data: {
   description: string;
   color: string;
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("categories").insert(data);
@@ -103,6 +110,7 @@ export async function updateCategory(
   id: string,
   data: { name: string; description: string; color: string }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("categories").update(data).eq("id", id);
@@ -116,6 +124,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("categories").delete().eq("id", id);
@@ -140,6 +149,7 @@ export async function createRecipe(data: {
   time_minutes: number;
   ingredients: IngredientInput[];
 }): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { data: recipe, error } = await supabase
@@ -177,6 +187,7 @@ export async function updateRecipe(
     ingredients: IngredientInput[];
   }
 ): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase
@@ -202,6 +213,7 @@ export async function updateRecipe(
 }
 
 export async function deleteRecipe(id: string): Promise<{ error?: string }> {
+  if (!await canDo("edit_products")) return ERR_PERM;
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from("recipes").delete().eq("id", id);

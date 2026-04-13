@@ -23,6 +23,7 @@ import {
   FlaskConical,
   Calculator,
   Tag,
+  ClipboardPen,
   Megaphone as Campaign,
   Monitor,
   Image,
@@ -62,6 +63,7 @@ const sectionSubNav: Record<
     { href: "/products/recipes",    icon: FlaskConical,    label: "レシピ管理" },
     { href: "/products/cost",       icon: Calculator,      label: "原価計算" },
     { href: "/products/categories", icon: Tag,             label: "カテゴリ管理" },
+    { href: "/products/trials",     icon: ClipboardPen,    label: "開発シート" },
   ],
   "/marketing": [
     { href: "/marketing",           icon: Campaign,  label: "キャンペーン" },
@@ -378,9 +380,10 @@ function RightPanel({ section, permissions }: { section: string | null; permissi
       { label: "損益を確認",   href: "/accounting/pl" },
     ],
     "/products": [
-      { label: "新商品を登録", href: "/products" },
-      { label: "レシピを追加", href: "/products/recipes" },
-      { label: "原価を計算",   href: "/products/cost" },
+      { label: "新商品を登録",   href: "/products" },
+      { label: "レシピを追加",   href: "/products/recipes" },
+      { label: "原価を計算",     href: "/products/cost" },
+      { label: "開発シートを作成", href: "/products/trials" },
     ],
     "/marketing": [
       { label: "キャンペーンを作成",  href: "/marketing" },

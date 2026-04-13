@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import BudgetClient from "./_components/BudgetClient";
 import { EXPENSE_CATEGORIES } from "@/types/accounting";
 
@@ -10,6 +11,7 @@ export type BudgetRow = {
 };
 
 export default async function BudgetPage() {
+  await requirePermission("view_accounting");
   let budgetRows: BudgetRow[] = [];
   let dbError = false;
 

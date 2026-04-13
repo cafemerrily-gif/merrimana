@@ -1,7 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import ProductsClient from "./_components/ProductsClient";
 
 export default async function ProductsPage() {
+  await requirePermission("view_products");
   try {
     const supabase = await createClient();
     const [{ data: products }, { data: categories }] = await Promise.all([

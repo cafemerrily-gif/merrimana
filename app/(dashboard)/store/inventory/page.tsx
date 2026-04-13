@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import InventoryClient from "./_components/InventoryClient";
 
 export type InventoryItem = {
@@ -13,6 +14,7 @@ export type InventoryItem = {
 };
 
 export default async function InventoryPage() {
+  await requirePermission("view_store");
   let items: InventoryItem[] = [];
 
   try {

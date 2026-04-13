@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import ShiftClient from "./_components/ShiftClient";
 import {
   type WeeklyShiftRow,
@@ -16,6 +17,7 @@ export default async function ShiftPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
+  await requirePermission("view_store");
   const { period: periodParam } = await searchParams;
   const today = new Date();
 

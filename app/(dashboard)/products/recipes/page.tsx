@@ -1,7 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import RecipesClient from "./_components/RecipesClient";
 
 export default async function RecipesPage() {
+  await requirePermission("view_products");
   try {
     const supabase = await createClient();
     const [{ data: recipes }, { data: products }] = await Promise.all([

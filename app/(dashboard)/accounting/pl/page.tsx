@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 
 type PLRow = {
   label: string;
@@ -26,6 +27,7 @@ function sumOtherExpenses(
 }
 
 export default async function PLPage() {
+  await requirePermission("view_accounting");
   const supabase = await createClient();
 
   const now = new Date();

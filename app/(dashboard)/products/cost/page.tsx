@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import CostClient from "./_components/CostClient";
 
 export type CostRow = {
@@ -11,6 +12,7 @@ export type CostRow = {
 };
 
 export default async function CostPage() {
+  await requirePermission("view_products");
   let rows: CostRow[] = [];
   let dbError = false;
 

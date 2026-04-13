@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import ExpensesClient from "./_components/ExpensesClient";
 import type { Expense } from "@/types/accounting";
 import { EXPENSE_CATEGORIES } from "@/types/accounting";
@@ -9,6 +10,7 @@ export type CategoryTotal = {
 };
 
 export default async function ExpensesPage() {
+  await requirePermission("view_accounting");
   let expenses: Expense[] = [];
   let categoryTotals: CategoryTotal[] = [];
   let dbError = false;

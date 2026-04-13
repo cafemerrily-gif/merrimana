@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import AnalyticsClient from "./_components/AnalyticsClient";
 
 function getMonthRange(year: number, month: number) {
@@ -31,6 +32,7 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
+  await requirePermission("view_accounting");
   const { month: monthParam } = await searchParams;
   const now = new Date();
   const [paramYear, paramMonth] = monthParam

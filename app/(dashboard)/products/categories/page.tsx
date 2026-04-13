@@ -1,7 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
+import { requirePermission } from "@/utils/permissions";
 import CategoriesClient from "./_components/CategoriesClient";
 
 export default async function CategoriesPage() {
+  await requirePermission("view_products");
   try {
     const supabase = await createClient();
     const { data: categories } = await supabase
