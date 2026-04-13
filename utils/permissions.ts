@@ -51,3 +51,30 @@ export async function requirePermission(permissionId: string): Promise<void> {
     redirect("/unauthorized");
   }
 }
+
+/**
+ * ロールが「管理者」でなければ /unauthorized へリダイレクト。
+ */
+export async function requireAdminRole(): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { redirect("/unauthorized"); return; }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "管理者") redirect("/unauthorized");
+  } catch {
+    redirect("/unauthorized");
+  }
+}
+
+/**
+ * Server Action 用: 権限があれば true、なければ false を返す（redirect しない）。
+ */
+export async function canDo(permissionId: string): Promise<boolean> {
+  const perms = await getMyPermissions();
+  return perms === null || perms.includes(permissionId);
+}
