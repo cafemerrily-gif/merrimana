@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { requirePermission } from "@/utils/permissions";
 
 const CALENDAR_DAYS = ["月", "火", "水", "木", "金", "土", "日"];
 const WEEK_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -88,6 +89,7 @@ function KpiCard({
 }
 
 export default async function HomePage() {
+  await requirePermission("view_dashboard");
   const today = new Date();
   const todayStr = getDateStr(today);
 
